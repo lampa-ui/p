@@ -177,7 +177,7 @@
     return e;
   }
   function _regenerator() {
-    /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */
+
     var e,
       t,
       r = "function" == typeof Symbol ? Symbol : {},
@@ -469,7 +469,7 @@
         zh: "更改API路径。如无必要，请勿更改, 如使用 KeenDNS，请指定 /app/transmission/rpc",
         ro: "Modifică ruta API. Nu schimbați fără necesitate, dacă folosiți KeenDNS, specificați /app/transmission/rpc"
       },
-      //Auth
+
       AuthSuccess: {
         en: "Authentication successful",
         ru: "Аутентификация успешна",
@@ -620,7 +620,7 @@
         uk: "Секрет оновлено",
         ro: "Secret actualizat"
       },
-      //Panel
+
       clientNotClient: {
         en: "Either the client is not configured or the server is not responding, check the console, you might find the answer there",
         ru: "Или клиент не настроен или сервер не отвечает, узри консоль, возможно там найдешь ответ",
@@ -633,7 +633,7 @@
         uk: "Щось пішло не так",
         ro: "Ceva nu a mers bine"
       },
-      //Panel action
+
       actionWithTorrent: {
         en: "Action with torrent",
         ru: "Действие с торрентом",
@@ -766,7 +766,7 @@
         uk: "Виберіть результат",
         ro: "Selectați rezultatul"
       },
-      // Section titles for status-based grouping
+
       torrentmanager_section_downloading: {
         en: "Downloading",
         ru: "Загрузка",
@@ -812,71 +812,36 @@
     });
   }
 
-  /**
-   * Torrent state classification into section groups.
-   * Maps raw client state strings to unified section keys.
-   */
-
-  /**
-   * Classify a torrent state string into a section key.
-   * @param {string} state - Raw torrent state from client API
-   * @returns {'downloading'|'seeding'|'completed'|'paused'|'checking'|'errored'}
-   */
   function classifyState$1(state) {
     var normalized = (state || '').toLowerCase().trim();
 
-    // Downloading — actively downloading
-    // qB: Downloading, MetaDL, ForcedDL, StalledDL, ForcedMetaDL, Downloading metadata
-    // S:  Downloading
-    // T:  Downloading
     if (/^(downloading|metadl|forceddl|stalleddl|forcedmetadl|downloading metadata)$/i.test(normalized)) {
       return 'downloading';
     }
 
-    // Seeding — actively uploading
-    // qB: Uploading, ForcedUP, StalledUP
-    // T:  Seeding
     if (/^(uploading|forcedup|stalledup|seeding)$/i.test(normalized)) {
       return 'seeding';
     }
 
-    // Completed — finished but not actively seeding (Synology)
-    // S:  Finished (when completed >= 1, normalizeTaskState returns 'Finished')
     if (/^(finished)$/i.test(normalized)) {
       return 'completed';
     }
 
-    // Paused / Stopped — manually stopped
-    // qB: PausedDL, PausedUP, StoppedDL, StoppedUP
-    // S:  Paused
-    // T:  Stopped, Paused
     if (/^(pauseddl|pausedup|stoppeddl|stoppedup|stopped|paused)$/i.test(normalized)) {
       return 'paused';
     }
 
-    // Checking / Queued / Waiting — in verification or waiting
-    // qB: CheckingUP, CheckingDL, QueuedUP, QueuedDL, CheckingResumeData, Checking, Queued, Allocating, Moving
-    // S:  Queued, Waiting, Extracting
-    // T:  Queued to verify local data, Verifying local data, Queued to download, Queued to seed
     if (/^(checkingup|checkingdl|queuedup|queueddl|checking|queued|allocating|moving|waiting|verifying|extracting)/i.test(normalized) || normalized.indexOf('queued to') >= 0 || normalized.indexOf('verify') >= 0) {
       return 'checking';
     }
 
-    // Errored — has errors
-    // qB: MissingFiles, Error, Unknown
-    // S:  Error, ErrorStatus
     if (/^(missingfiles|error|unknown|errorstatus)$/i.test(normalized)) {
       return 'errored';
     }
 
-    // Fallback: unknown states
     return 'errored';
   }
 
-  /**
-   * Ordered section definitions with metadata.
-   * Order determines render and navigation priority.
-   */
   var SECTION_DEFINITIONS = [{
     key: 'downloading',
     langKey: 'torrentmanager_section_downloading',
@@ -903,11 +868,6 @@
     priority: 5
   }];
 
-  /**
-   * Get the standardized, translated display name for a raw torrent state.
-   * @param {string} state - Raw torrent state from client API
-   * @returns {string} Translated standardized state name
-   */
   function getStandardizedStateName(state) {
     var sectionKey = classifyState$1(state);
     for (var i = 0; i < SECTION_DEFINITIONS.length; i++) {
@@ -915,14 +875,9 @@
         return Lampa.Lang.translate(SECTION_DEFINITIONS[i].langKey);
       }
     }
-    return state || ''; // Fallback to raw state if section not found
+    return state || '';
   }
 
-  /**
-   * Group an array of torrents by their classified status.
-   * @param {Array} torrents - Array of torrent objects with .state property
-   * @returns {Object} Grouped object with keys: downloading, seeding, completed, paused, checking, errored
-   */
   function groupTorrentsByStatus(torrents) {
     var groups = {
       downloading: [],
@@ -957,7 +912,7 @@
     return 'is-low';
   }
   function Item(data) {
-    this.id = data.id; // зберігаємо ідентифікатор торренту
+    this.id = data.id;
     var initialProgress = Number((data.completed * 100).toFixed(2));
     var itemN = Lampa.Template.get('lmetorrent_item__card', {
       title: data.name,
@@ -974,9 +929,8 @@
       return itemN;
     };
 
-    // Метод для оновлення статусу та прогресу
     this.update = function (newData) {
-      // Припускається, що відповідні елементи мають класи для статусу та прогресу
+
       itemN.find('.lmetorrent_card__state').text(getStandardizedStateName(newData.state));
       var progress = Number((newData.completed * 100).toFixed(2));
       itemN.attr("data-completed", progress);
@@ -987,34 +941,24 @@
     };
   }
 
-  /**
-   * A single section in the torrent panel.
-   * Wraps items_line template with horizontal scroll and PanelItem children.
-   * @param {Object} config
-   * @param {string} config.key - Section key (downloading/seeding/etc.)
-   * @param {string} config.title - Section display title
-   * @param {string} config.icon - Section icon character
-   * @param {Array} config.items - Array of torrent data objects
-   */
   function PanelSection(config) {
     var self = this;
     this.key = config.key;
     this.title = config.title;
     this.icon = config.icon || '';
     this.items = [];
-    this.last = null; // Last focused DOM element (vinyl pattern)
-    this.lastFocusedIndex = -1; // Last focused index for scroll tracking
-    this.torrentDataMap = {}; // id -> latest torrent data object
+    this.last = null;
+    this.lastFocusedIndex = -1;
+    this.torrentDataMap = {};
 
     var sectionId = 'lmetorrent_section_' + config.key;
     this.onDown = null;
     this.onUp = null;
     this.onBack = null;
     this.onLeft = null;
-    this.onMore = null; // Callback for "more" button (section-level)
-    this.itemsLimit = 11; // Max items shown before "more" card
+    this.onMore = null;
+    this.itemsLimit = 11;
 
-    // Build DOM from items_line template
     this.html = Lampa.Template.get('items_line', {
       title: config.title
     });
@@ -1022,24 +966,17 @@
     this.html.attr('data-section-key', config.key);
     var titleEl = this.html.find('.items-line__title');
 
-    // Prepend icon and append count to title
     if (this.icon) {
       titleEl.prepend('<span class="lmetorrent-section__icon">' + this.icon + '</span>');
     }
     titleEl.append('<span class="lmetorrent-section__count">(' + config.items.length + ')</span>');
     var bodyEl = this.html.find('.items-line__body');
 
-    // Create horizontal scroll
     this.scroll = new Lampa.Scroll({
       horizontal: true,
       step: 300
     });
 
-    /**
-     * Create the section: render items, append scroll to body.
-     * Limits visible items to itemsLimit and adds "more" card when count exceeds limit.
-     * Follows vinyl/lib/line.js pattern for pagination.
-     */
     this.create = function () {
       self.scroll.render().find('.scroll__body').addClass('items-cards');
       self.scroll.render().find('.scroll__body').addClass('mapping--line');
@@ -1048,7 +985,6 @@
       var displayItems = items.slice(0, displayLimit);
       var hasMore = items.length > displayLimit && typeof self.onMore === 'function';
 
-      // Add "more" button in section header when onMore is provided
       if (hasMore) {
         var headMore = $('<div class="items-line__more selector">' + Lampa.Lang.translate('more') + '</div>');
         headMore.on('hover:enter', function () {
@@ -1060,7 +996,6 @@
         self.appendItem(torrentData);
       });
 
-      // Add native card-more at end of scroll
       if (hasMore) {
         var nativeMore = $('<div class="card-more selector">' + '<div class="card-more__box">' + '<div class="card-more__title">' + Lampa.Lang.translate('more') + '</div>' + '</div>' + '</div>');
         nativeMore.on('hover:focus', function () {
@@ -1075,18 +1010,13 @@
       return this.render();
     };
 
-    /**
-     * Create a PanelItem for torrentData and append to scroll.
-     * Stores torrent data in torrentDataMap for closure-safe retrieval on hover:enter.
-     * @param {Object} torrentData
-     */
     this.appendItem = function (torrentData) {
       var data = torrentData;
       var id = String(data.id);
       self.torrentDataMap[id] = data;
       var item = new Item(data);
       item.render().on('hover:focus', function () {
-        self.last = item.render()[0]; // Track DOM element (vinyl pattern)
+        self.last = item.render()[0];
         self.lastFocusedIndex = self.items.indexOf(item);
         if (self.lastFocusedIndex >= 0) {
           self.scroll.update(self.items[self.lastFocusedIndex].render(), true);
@@ -1101,26 +1031,16 @@
       self.items.push(item);
     };
 
-    /**
-     * Return the jQuery element representing this section.
-     */
     this.render = function () {
       return this.html;
     };
 
-    /**
-     * Update section with new items. Uses diff approach — preserves existing
-     * DOM elements and updates them in place when possible, avoiding flicker
-     * from destroy-and-rebuild on every poll cycle.
-     * @param {Array} newItems - Array of new torrent data objects
-     */
     this.update = function (newItems) {
       var limit = self.itemsLimit || 11;
       var items = Array.isArray(newItems) ? newItems : [];
       var displayItems = items.slice(0, limit);
       var hasMore = items.length > limit && typeof self.onMore === 'function';
 
-      // Build existing item map by id
       var existingMap = {};
       this.items.forEach(function (item) {
         existingMap[String(item.id)] = item;
@@ -1128,17 +1048,16 @@
       var newIds = {};
       var remaining = [];
 
-      // Process items within display limit
       displayItems.forEach(function (torrentData) {
         var id = String(torrentData.id);
         newIds[id] = true;
         self.torrentDataMap[id] = torrentData;
         if (existingMap[id]) {
-          // Update existing item in place — NO DOM removal
+
           existingMap[id].update(torrentData);
           remaining.push(existingMap[id]);
         } else {
-          // Create new PanelItem inline (mirrors appendItem logic)
+
           var item = new Item(torrentData);
           item.render().on('hover:focus', function () {
             self.last = item.render()[0];
@@ -1158,7 +1077,6 @@
         }
       });
 
-      // Destroy items no longer in display set
       this.items.forEach(function (item) {
         var id = String(item.id);
         if (!newIds[id]) {
@@ -1168,7 +1086,6 @@
       });
       this.items = remaining;
 
-      // Handle more button in header
       var moreBtnEl = self.html.find('.items-line__more');
       if (hasMore && !moreBtnEl.length) {
         var headMore = $('<div class="items-line__more selector">' + Lampa.Lang.translate('more') + '</div>');
@@ -1180,7 +1097,6 @@
         moreBtnEl.remove();
       }
 
-      // Handle native card-more in scroll
       var cardMoreEl = self.scroll.render().find('.card-more');
       if (hasMore && !cardMoreEl.length) {
         var nativeMore = $('<div class="card-more selector">' + '<div class="card-more__box">' + '<div class="card-more__title">' + Lampa.Lang.translate('more') + '</div>' + '</div>' + '</div>');
@@ -1195,20 +1111,14 @@
         cardMoreEl.remove();
       }
 
-      // Reset last focused index if out of bounds
       if (this.lastFocusedIndex >= this.items.length) {
         this.lastFocusedIndex = this.items.length - 1;
       }
 
-      // Update count badge
       var countEl = self.html.find('.lmetorrent-section__count');
       countEl.text('(' + items.length + ')');
     };
 
-    /**
-     * Focus this section's first or last-focused card.
-     * Sets the Lampa.Controller collection to this section's scroll.
-     */
     this.focus = function () {
       if (this.items.length === 0) return;
       var targetIndex = this.lastFocusedIndex >= 0 && this.lastFocusedIndex < this.items.length ? this.lastFocusedIndex : 0;
@@ -1216,28 +1126,14 @@
       Lampa.Controller.collectionFocus(this.items[targetIndex].render()[0] || false, this.scroll.render());
     };
 
-    /**
-     * Save current focused index for later restoration.
-     * Focus index is tracked automatically via hover:focus handler.
-     */
     this.saveFocus = function () {
-      // lastFocusedIndex is updated on hover:focus, so already tracked
+
     };
 
-    /**
-     * Get the last focused DOM element, or false if none.
-     * @returns {HTMLElement|false}
-     */
     this.getLastFocused = function () {
       return self.last || false;
     };
 
-    /**
-     * Toggle this section's own controller.
-     * Registers a Lampa.Controller for this section and activates it.
-     * Uses Navigator.move for left/right within the section, following the exact
-     * vinyl pattern (line/Line module) for horizontal scroll navigation.
-     */
     this.toggle = function () {
       Lampa.Controller.add(sectionId, {
         toggle: function toggle() {
@@ -1264,43 +1160,26 @@
       Lampa.Controller.toggle(sectionId);
     };
 
-    /**
-     * Navigate left within the section.
-     */
     this.scrollLeft = function () {
       if (Navigator.canmove('left')) {
         Navigator.move('left');
       }
     };
 
-    /**
-     * Navigate right within the section.
-     */
     this.scrollRight = function () {
       if (Navigator.canmove('right')) {
         Navigator.move('right');
       }
     };
 
-    /**
-     * Check if section has no items.
-     * @returns {boolean}
-     */
     this.isEmpty = function () {
       return this.items.length === 0;
     };
 
-    /**
-     * Get number of items in this section.
-     * @returns {number}
-     */
     this.getItemCount = function () {
       return this.items.length;
     };
 
-    /**
-     * Destroy the section: scroll, items, DOM removal.
-     */
     this.destroy = function () {
       this.last = null;
       Lampa.Arrays.destroy(this.items);
@@ -1359,13 +1238,13 @@
     return _getPosterFromLabels.apply(this, arguments);
   }
   function _getPosterFromLabels() {
-    _getPosterFromLabels = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(labels) {
+    _getPosterFromLabels = _asyncToGenerator(_regenerator().m(function _callee(labels) {
       var labelArray, label, _label$split, _label$split2, method, id, sourcePoster, response, poster, _t;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.p = _context.n) {
           case 0:
-            // Ищем лейблы, которые начинаются на tv или movie и содержат цифры после косой
-            labelArray = Array.isArray(labels) ? labels : labels.split(','); // Find label matching tv/movie pattern
+
+            labelArray = Array.isArray(labels) ? labels : labels.split(',');
             label = labelArray.find(function (label) {
               return /^(tv|movie)\/\d+$/.test(label);
             });
@@ -1563,7 +1442,7 @@
     return _makeRequest.apply(this, arguments);
   }
   function _makeRequest() {
-    _makeRequest = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(path) {
+    _makeRequest = _asyncToGenerator(_regenerator().m(function _callee(path) {
       var options,
         config,
         _args = arguments,
@@ -1635,7 +1514,7 @@
     return _GetData$1.apply(this, arguments);
   }
   function _GetData$1() {
-    _GetData$1 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+    _GetData$1 = _asyncToGenerator(_regenerator().m(function _callee4() {
       var response, torrents, _t0;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
@@ -1654,8 +1533,8 @@
             return _context4.a(2, []);
           case 2:
             torrents = Object.values(response.torrents);
-            return _context4.a(2, Promise.all(torrents.map(/*#__PURE__*/function () {
-              var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(torrent) {
+            return _context4.a(2, Promise.all(torrents.map(function () {
+              var _ref = _asyncToGenerator(_regenerator().m(function _callee3(torrent) {
                 var _t3, _t4, _t5, _t6, _t7, _t8, _t9;
                 return _regenerator().w(function (_context3) {
                   while (1) switch (_context3.n) {
@@ -1702,7 +1581,7 @@
     return _GetInfo$1.apply(this, arguments);
   }
   function _GetInfo$1() {
-    _GetInfo$1 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+    _GetInfo$1 = _asyncToGenerator(_regenerator().m(function _callee5() {
       var response;
       return _regenerator().w(function (_context5) {
         while (1) switch (_context5.n) {
@@ -1735,7 +1614,7 @@
     return _SendCommand$1.apply(this, arguments);
   }
   function _SendCommand$1() {
-    _SendCommand$1 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(action, torrentData) {
+    _SendCommand$1 = _asyncToGenerator(_regenerator().m(function _callee6(action, torrentData) {
       var version, normalizedAction, commandPath, requestData, _t1;
       return _regenerator().w(function (_context6) {
         while (1) switch (_context6.p = _context6.n) {
@@ -1786,7 +1665,7 @@
     return _SendTask$1.apply(this, arguments);
   }
   function _SendTask$1() {
-    _SendTask$1 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(selectedTorrent, labels, dtype) {
+    _SendTask$1 = _asyncToGenerator(_regenerator().m(function _callee7(selectedTorrent, labels, dtype) {
       var _t10;
       return _regenerator().w(function (_context7) {
         while (1) switch (_context7.p = _context7.n) {
@@ -1835,7 +1714,7 @@
     return _setTags.apply(this, arguments);
   }
   function _setTags() {
-    _setTags = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(torrentId, tags) {
+    _setTags = _asyncToGenerator(_regenerator().m(function _callee8(torrentId, tags) {
       var tagValue;
       return _regenerator().w(function (_context8) {
         while (1) switch (_context8.n) {
@@ -1950,66 +1829,38 @@
     setTags: setTags
   };
 
-  /**
-   * Torrent Parser Utility
-   * 
-   * This module provides functionality to parse torrent names and
-   * fetch corresponding metadata from TMDB.
-   */
-
-  /**
-   * Clean torrent name by removing quality, year, and other technical information
-   * 
-   * @param {string} name - Original torrent name
-   * @returns {string} - Cleaned name suitable for metadata search
-   */
   function cleanName(name) {
     if (!name) return {
       query: '',
       year: null
     };
 
-    // Regular expression to extract the main title from torrent name
-    // Removes season/episode markers, year, quality indicators, etc.
-    var regex = /*#__PURE__*/_wrapRegExp(/^(.+?)(?:[.\s(](19\d{2}|20\d{2})[.\s)]|S\d{1,2}(?:E\d{1,2})?|[.\s](?:PPV.)?[HP]DTV|(?:HD)?TC|[cC]am|(?:HD)?CAM|B[rR]Rip|WEBRip|WEB-Rip|WEB-DL|WEB|TS|(?:PPV )?WEB-?DL(?: DVDRip)?|H[dD]Rip|DVDRip|DVDRiP|DVDRIP|CamRip|W[EB]B[rR]ip|HDRIP|[Bb]lu[Rr]ay|DvDScr|hdtv)/i, {
+    var regex = _wrapRegExp(/^(.+?)(?:[.\s(](19\d{2}|20\d{2})[.\s)]|S\d{1,2}(?:E\d{1,2})?|[.\s](?:PPV.)?[HP]DTV|(?:HD)?TC|[cC]am|(?:HD)?CAM|B[rR]Rip|WEBRip|WEB-Rip|WEB-DL|WEB|TS|(?:PPV )?WEB-?DL(?: DVDRip)?|H[dD]Rip|DVDRip|DVDRiP|DVDRIP|CamRip|W[EB]B[rR]ip|HDRIP|[Bb]lu[Rr]ay|DvDScr|hdtv)/i, {
       title: 1,
       year: 2
     });
     var match = name.match(regex);
 
-    // If we have a match with a title group, use it
     if (match && match.groups && match.groups.title) {
-      // Replace dots between words with spaces
+
       return {
         query: match.groups.title.replace(/\./g, ' ').trim(),
         year: match.groups.year || null
       };
     }
 
-    // Fallback: just replace dots with spaces
     return {
       query: name.replace(/\./g, ' ').trim(),
       year: null
     };
   }
 
-  /**
-   * Search for media metadata on TMDB
-   * 
-   * @param {string} query - Search query
-   * @returns {Promise<Object>} - Promise resolving to TMDB response
-   */
   function searchTMDB(_x) {
     return _searchTMDB.apply(this, arguments);
   }
-  /**
-   * Handle case when multiple results are found
-   * 
-   * @param {Array} results - Array of TMDB results
-   * @returns {Promise<Object>} - Promise resolving to selected media info
-   */
+
   function _searchTMDB() {
-    _searchTMDB = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(query) {
+    _searchTMDB = _asyncToGenerator(_regenerator().m(function _callee(query) {
       var tmdbLang, url, _t;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.p = _context.n) {
@@ -2041,7 +1892,6 @@
     return new Promise(function (resolve, reject) {
       var enabled = Lampa.Controller.enabled().name;
 
-      // Format menu items with title and date information
       var menuItems = results.map(function (result) {
         return {
           title: "".concat(result.title || result.name, " (").concat(result.media_type, ")") + (result.media_type === 'tv' && result.first_air_date ? " - ".concat(result.first_air_date) : '') + (result.media_type === 'movie' && result.release_date ? " - ".concat(result.release_date) : ''),
@@ -2050,17 +1900,16 @@
         };
       });
 
-      // Show selection menu
       Lampa.Select.show({
         title: Lampa.Lang.translate('selectResult'),
         items: menuItems,
         onBack: function onBack() {
-          // Повертаємось до попереднього контролера, якщо він існує
+
           var currentController = Lampa.Controller.enabled();
           if (currentController && currentController.name !== enabled) {
             Lampa.Controller.toggle(enabled);
           } else {
-            // Якщо контролер не змінився, просто вимикаємо меню
+
             Lampa.Controller.toggle('menu');
           }
           reject(new Error('Selection canceled by user'));
@@ -2075,33 +1924,27 @@
     });
   }
 
-  /**
-   * Process torrents to find metadata
-   * 
-   * @param {Object|Array} torrentData - Torrent data to process
-   * @returns {Promise<Array>} - Promise resolving to array of media info
-   */
   function processTorrents$1(_x2) {
     return _processTorrents.apply(this, arguments);
   }
   function _processTorrents() {
-    _processTorrents = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(torrentData) {
+    _processTorrents = _asyncToGenerator(_regenerator().m(function _callee3(torrentData) {
       var torrents, results, _t3;
       return _regenerator().w(function (_context3) {
         while (1) switch (_context3.p = _context3.n) {
           case 0:
-            // Ensure we're working with an array
+
             torrents = Array.isArray(torrentData) ? torrentData : [torrentData];
             _context3.p = 1;
             _context3.n = 2;
-            return Promise.all(torrents.map(/*#__PURE__*/function () {
-              var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(torrent) {
+            return Promise.all(torrents.map(function () {
+              var _ref = _asyncToGenerator(_regenerator().m(function _callee2(torrent) {
                 var name, cleanedNameInfo, response, strictMatches, _t2;
                 return _regenerator().w(function (_context2) {
                   while (1) switch (_context2.p = _context2.n) {
                     case 0:
                       _context2.p = 0;
-                      // Clean the torrent name
+
                       name = torrent.name || torrent;
                       cleanedNameInfo = cleanName(name);
                       if (cleanedNameInfo.query) {
@@ -2247,7 +2090,7 @@
       return _makeRequest.apply(this, arguments);
     }
     function _makeRequest() {
-      _makeRequest = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(data) {
+      _makeRequest = _asyncToGenerator(_regenerator().m(function _callee(data) {
         var timeout,
           body,
           sessionId,
@@ -2293,7 +2136,6 @@
         normalized.status = error.status;
       }
 
-      // Preserve diagnostic fields from jqXHR
       if (error && error.decode_error) {
         normalized.decode_error = error.decode_error;
       }
@@ -2306,7 +2148,7 @@
       return _setLabels.apply(this, arguments);
     }
     function _setLabels() {
-      _setLabels = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(torrentId, labels) {
+      _setLabels = _asyncToGenerator(_regenerator().m(function _callee2(torrentId, labels) {
         var labelList;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.n) {
@@ -2331,7 +2173,7 @@
       return _auth.apply(this, arguments);
     }
     function _auth() {
-      _auth = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      _auth = _asyncToGenerator(_regenerator().m(function _callee3() {
         var showNotification,
           sessionId,
           status,
@@ -2378,22 +2220,22 @@
               if (showNotification) {
                 status = Number(_t2 && _t2.status);
                 if (status === 0) {
-                  // Network connection error (server unreachable)
+
                   Lampa.Bell.push({
                     text: Lampa.Lang.translate("torrentmanager_connection_error")
                   });
                 } else if (status === 401 || status === 403) {
-                  // Authentication denied
+
                   Lampa.Bell.push({
                     text: Lampa.Lang.translate("AuthDenied")
                   });
                 } else if (status >= 500) {
-                  // Server-side error
+
                   Lampa.Bell.push({
                     text: Lampa.Lang.translate("torrentmanager_server_error")
                   });
                 } else {
-                  // Fallback
+
                   Lampa.Bell.push({
                     text: Lampa.Lang.translate("AuthDenied")
                   });
@@ -2411,7 +2253,7 @@
       return _GetData.apply(this, arguments);
     }
     function _GetData() {
-      _GetData = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+      _GetData = _asyncToGenerator(_regenerator().m(function _callee5() {
         var fields, response, _t0;
         return _regenerator().w(function (_context5) {
           while (1) switch (_context5.p = _context5.n) {
@@ -2427,8 +2269,8 @@
               });
             case 1:
               response = _context5.v;
-              return _context5.a(2, Promise.all(response.arguments.torrents.map(/*#__PURE__*/function () {
-                var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(torrent) {
+              return _context5.a(2, Promise.all(response.arguments.torrents.map(function () {
+                var _ref = _asyncToGenerator(_regenerator().m(function _callee4(torrent) {
                   var baseItem, extraData, _t3, _t4, _t5, _t6, _t7, _t8, _t9;
                   return _regenerator().w(function (_context4) {
                     while (1) switch (_context4.n) {
@@ -2483,7 +2325,7 @@
       return _GetInfo.apply(this, arguments);
     }
     function _GetInfo() {
-      _GetInfo = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+      _GetInfo = _asyncToGenerator(_regenerator().m(function _callee6() {
         var response, _t1;
         return _regenerator().w(function (_context6) {
           while (1) switch (_context6.p = _context6.n) {
@@ -2514,7 +2356,7 @@
       return _handleParseAction.apply(this, arguments);
     }
     function _handleParseAction() {
-      _handleParseAction = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(action, torrentData) {
+      _handleParseAction = _asyncToGenerator(_regenerator().m(function _callee7(action, torrentData) {
         var response, mediaTypeId;
         return _regenerator().w(function (_context7) {
           while (1) switch (_context7.n) {
@@ -2558,7 +2400,7 @@
       return _handleDefaultCommand.apply(this, arguments);
     }
     function _handleDefaultCommand() {
-      _handleDefaultCommand = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(action, torrentData) {
+      _handleDefaultCommand = _asyncToGenerator(_regenerator().m(function _callee8(action, torrentData) {
         var method, _t10;
         return _regenerator().w(function (_context8) {
           while (1) switch (_context8.n) {
@@ -2602,7 +2444,7 @@
       return _SendCommand.apply(this, arguments);
     }
     function _SendCommand() {
-      _SendCommand = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9(action, torrentData) {
+      _SendCommand = _asyncToGenerator(_regenerator().m(function _callee9(action, torrentData) {
         var parsed, handled, _t11;
         return _regenerator().w(function (_context9) {
           while (1) switch (_context9.p = _context9.n) {
@@ -2662,7 +2504,7 @@
       return _SendTask.apply(this, arguments);
     }
     function _SendTask() {
-      _SendTask = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0(selectedTorrent, labels, dtype) {
+      _SendTask = _asyncToGenerator(_regenerator().m(function _callee0(selectedTorrent, labels, dtype) {
         var config, addResponse, torrentId, labelResponse, _t12;
         return _regenerator().w(function (_context0) {
           while (1) switch (_context0.p = _context0.n) {
@@ -2754,11 +2596,6 @@
     clientName: "Transmission"
   });
 
-  /**
-   * Генерує зображення з текстом за допомогою Canvas API.
-   * @param {string} text - Текст для відображення на зображенні.
-   * @returns {string} - URL зображення у форматі data:image/png;base64.
-   */
   function textToImage(text) {
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
@@ -2767,22 +2604,17 @@
     canvas.width = width;
     canvas.height = height;
 
-    // Фон
-    context.fillStyle = '#1a202c'; // Темно-сірий фон
+    context.fillStyle = '#1a202c';
     context.fillRect(0, 0, width, height);
 
-    // Налаштування тексту
-    context.fillStyle = '#ffffff'; // Білий колір тексту
+    context.fillStyle = '#ffffff';
     context.font = 'bold 48px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
-    // Розбивка тексту на рядки
-    // Спочатку розбиваємо по наявних переносах рядків
     var initialLines = text.split('\n');
     var lines = [];
 
-    // Функція для розбиття довгого слова на частини
     function breakLongWord(word, maxWidth) {
       var brokenLines = [];
       var currentPart = '';
@@ -2804,25 +2636,24 @@
       return brokenLines;
     }
 
-    // Потім для кожного рядка застосовуємо переноси за шириною
     initialLines.forEach(function (initialLine) {
       var words = initialLine.split(' ');
       var currentLine = '';
       for (var i = 0; i < words.length; i++) {
         var word = words[i];
-        // Перевіряємо, чи слово не занадто довге
+
         var wordMetrics = context.measureText(word);
         if (wordMetrics.width > width - 40) {
-          // Якщо є поточний рядок, додаємо його до списку
+
           if (currentLine !== '') {
             lines.push(currentLine);
             currentLine = '';
           }
-          // Розбиваємо довге слово на частини
+
           var brokenWordLines = breakLongWord(word, width - 40);
           lines.push.apply(lines, _toConsumableArray(brokenWordLines));
         } else {
-          // Слово не занадто довге, обробляємо звичайним чином
+
           var testLine = currentLine === '' ? word : currentLine + ' ' + word;
           var metrics = context.measureText(testLine);
           var testWidth = metrics.width;
@@ -2834,13 +2665,12 @@
           }
         }
       }
-      // Додаємо останній рядок, якщо він не порожній
+
       if (currentLine !== '') {
         lines.push(currentLine);
       }
     });
 
-    // Відображення тексту
     var lineHeight = 58;
     var startY = (height - lines.length * lineHeight) / 2 + lineHeight / 2;
     lines.forEach(function (line, index) {
@@ -2849,29 +2679,16 @@
     return canvas.toDataURL('image/png');
   }
 
-  /**
-   * @file IndexedDB утиліти для зберігання метаданих торрентів.
-   * Інкапсулює логіку роботи з Lampa.DB (IndexedDB).
-   */
-
   var DB_NAME = 'lme_torrentmanager';
-  var DB_VERSION = 4; // Збільшено версію для гарантованого оновлення
+  var DB_VERSION = 4;
 
-  /**
-   * Отримує список всіх можливих імен таблиць для всіх клієнтів.
-   * @returns {string[]} Масив імен таблиць.
-   */
   function getAllTableNames() {
-    var clients = ['synology', 'qbittorent', 'transmission', 'keenetic', 'universal']; // Додайте сюди інших клієнтів за потреби
+    var clients = ['synology', 'qbittorent', 'transmission', 'keenetic', 'universal'];
     return clients.map(function (client) {
       return "".concat(client, "_metadata");
     });
   }
 
-  /**
-   * Допоміжна функція для отримання назви таблиці (сховища) на основі активного клієнта.
-   * @returns {string} Назва таблиці, напр. 'synology_metadata'.
-   */
   function getTableName() {
     var client = Lampa.Storage.field('lmetorrentSelect');
     if (!client) {
@@ -2882,16 +2699,12 @@
   }
   var dbPromise = null;
 
-  /**
-   * Ініціалізує та відкриває IndexedDB, використовуючи патерн singleton promise.
-   * @returns {Promise<object>} Promise, який вирішується об'єктом бази даних Lampa.DB.
-   */
   function initDB() {
     if (dbPromise) {
       return dbPromise;
     }
-    dbPromise = new Promise(/*#__PURE__*/function () {
-      var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(resolve, reject) {
+    dbPromise = new Promise(function () {
+      var _ref = _asyncToGenerator(_regenerator().m(function _callee(resolve, reject) {
         var allTables, db, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
@@ -2901,7 +2714,7 @@
                 break;
               }
               console.error('TDM', 'Lampa.DB не визначено.');
-              dbPromise = null; // Скидаємо для повторної спроби
+              dbPromise = null;
               return _context.a(2, reject(new Error('Lampa.DB is not defined')));
             case 1:
               allTables = getAllTableNames();
@@ -2917,7 +2730,7 @@
               _context.p = 4;
               _t = _context.v;
               console.error("TDM", "Critical error '".concat(DB_NAME, "':"), _t);
-              dbPromise = null; // Скидаємо для повторної спроби
+              dbPromise = null;
               reject(_t);
             case 5:
               return _context.a(2);
@@ -2931,23 +2744,12 @@
     return dbPromise;
   }
 
-  /**
-   * Зберігає метадані для ключа.
-   * @param {string} key - Ключ (ідентифікатор торренту).
-   * @param {any} value - Значення для збереження.
-   * @returns {Promise<void>}
-   */
   function saveMetadata(_x3, _x4) {
     return _saveMetadata.apply(this, arguments);
   }
 
-  /**
-   * Отримує метадані за ключем.
-   * @param {string} key - Ключ (ідентифікатор торренту).
-   * @returns {Promise<any|null>}
-   */
   function _saveMetadata() {
-    _saveMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(key, value) {
+    _saveMetadata = _asyncToGenerator(_regenerator().m(function _callee2(key, value) {
       var db, tableName, _t2;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.p = _context2.n) {
@@ -2979,14 +2781,8 @@
     return _getMetadata.apply(this, arguments);
   }
 
-  /**
-   * Search metadata by TMDB ID across all stored records.
-   * Uses getData with no key to retrieve all entries, then filters by tmdb_id.
-   * @param {number|string} tmdbId - TMDB ID to search for
-   * @returns {Promise<Object|null>} - Found metadata record or null
-   */
   function _getMetadata() {
-    _getMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(key) {
+    _getMetadata = _asyncToGenerator(_regenerator().m(function _callee3(key) {
       var db, tableName, result, _t3;
       return _regenerator().w(function (_context3) {
         while (1) switch (_context3.p = _context3.n) {
@@ -3027,14 +2823,8 @@
     return _getMetadataByTmdbId.apply(this, arguments);
   }
 
-  /**
-   * Check if cached metadata is still fresh (within TTL).
-   * @param {string} key - Cache key (torrent identifier)
-   * @param {number} ttlHours - Time to live in hours (default: 24)
-   * @returns {Promise<boolean>}
-   */
   function _getMetadataByTmdbId() {
-    _getMetadataByTmdbId = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(tmdbId) {
+    _getMetadataByTmdbId = _asyncToGenerator(_regenerator().m(function _callee4(tmdbId) {
       var db, tableName, allRecords, _t4;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
@@ -3141,7 +2931,7 @@
     return _requestSearchByFileName.apply(this, arguments);
   }
   function _requestSearchByFileName() {
-    _requestSearchByFileName = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(fileName) {
+    _requestSearchByFileName = _asyncToGenerator(_regenerator().m(function _callee(fileName) {
       return _regenerator().w(function (_context) {
         while (1) switch (_context.n) {
           case 0:
@@ -3160,7 +2950,7 @@
     return _resolveTmdbFromSimkl.apply(this, arguments);
   }
   function _resolveTmdbFromSimkl() {
-    _resolveTmdbFromSimkl = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(fileName) {
+    _resolveTmdbFromSimkl = _asyncToGenerator(_regenerator().m(function _callee2(fileName) {
       var normalizedFileName, response, payload, _t;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.p = _context2.n) {
@@ -3299,7 +3089,7 @@
     return _auth.apply(this, arguments);
   }
   function _auth() {
-    _auth = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+    _auth = _asyncToGenerator(_regenerator().m(function _callee2() {
       var showNotification,
         _args2 = arguments;
       return _regenerator().w(function (_context2) {
@@ -3312,7 +3102,7 @@
             }
             return _context2.a(2, authPromise);
           case 1:
-            authPromise = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+            authPromise = _asyncToGenerator(_regenerator().m(function _callee() {
               var config, response, payload, code, _payload, _code, normalizedError, _t;
               return _regenerator().w(function (_context) {
                 while (1) switch (_context.p = _context.n) {
@@ -3397,7 +3187,7 @@
     return _requestSynology.apply(this, arguments);
   }
   function _requestSynology() {
-    _requestSynology = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(path) {
+    _requestSynology = _asyncToGenerator(_regenerator().m(function _callee3(path) {
       var params,
         options,
         requestOptions,
@@ -3522,7 +3312,6 @@
     var size = Number(task && task.size) || 0;
     var downloaded = Number(transfer.size_downloaded) || 0;
 
-    // Synology may return size=0 or downloaded=0 for some tasks even when file stats are present.
     if (!size && fileTotals.size > 0) {
       size = fileTotals.size;
     }
@@ -3544,7 +3333,6 @@
     var raw = String(status || '');
     var lower = raw.toLowerCase();
 
-    // If progress is already full, do not keep "downloading" in UI.
     if (completed >= 1 && lower.indexOf('download') >= 0) {
       return 'Finished';
     }
@@ -3573,7 +3361,7 @@
     return _resolveSimklWithCache.apply(this, arguments);
   }
   function _resolveSimklWithCache() {
-    _resolveSimklWithCache = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(title) {
+    _resolveSimklWithCache = _asyncToGenerator(_regenerator().m(function _callee4(title) {
       var cacheKey;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.n) {
@@ -3600,7 +3388,7 @@
     return _resolvePosterByMetadata.apply(this, arguments);
   }
   function _resolvePosterByMetadata() {
-    _resolvePosterByMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(metadata) {
+    _resolvePosterByMetadata = _asyncToGenerator(_regenerator().m(function _callee5(metadata) {
       var label, resolvedPoster;
       return _regenerator().w(function (_context5) {
         while (1) switch (_context5.n) {
@@ -3632,7 +3420,7 @@
     return _hydrateMetadataFromSimkl.apply(this, arguments);
   }
   function _hydrateMetadataFromSimkl() {
-    _hydrateMetadataFromSimkl = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(torrentId, title, metadata) {
+    _hydrateMetadataFromSimkl = _asyncToGenerator(_regenerator().m(function _callee6(torrentId, title, metadata) {
       var now, currentMetadata, match, failedMetadata, nextMetadata, resolvedPoster, _t3;
       return _regenerator().w(function (_context6) {
         while (1) switch (_context6.p = _context6.n) {
@@ -3697,7 +3485,7 @@
     return _GetData.apply(this, arguments);
   }
   function _GetData() {
-    _GetData = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8() {
+    _GetData = _asyncToGenerator(_regenerator().m(function _callee8() {
       var payload, tasks, _t5;
       return _regenerator().w(function (_context8) {
         while (1) switch (_context8.p = _context8.n) {
@@ -3714,8 +3502,8 @@
           case 1:
             payload = _context8.v;
             tasks = payload && payload.data && Array.isArray(payload.data.tasks) ? payload.data.tasks : [];
-            return _context8.a(2, Promise.all(tasks.map(/*#__PURE__*/function () {
-              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(torrent) {
+            return _context8.a(2, Promise.all(tasks.map(function () {
+              var _ref2 = _asyncToGenerator(_regenerator().m(function _callee7(torrent) {
                 var metadata, title, progress, imageUrl, resolvedPoster, nextMetadata, _t4;
                 return _regenerator().w(function (_context7) {
                   while (1) switch (_context7.p = _context7.n) {
@@ -3730,7 +3518,7 @@
                       return hydrateMetadataFromSimkl(torrent.id, title, metadata);
                     case 2:
                       metadata = _context7.v;
-                      imageUrl = metadata && metadata.poster ? metadata.poster : ''; // Backward compatibility for older metadata rows without cached poster.
+                      imageUrl = metadata && metadata.poster ? metadata.poster : '';
                       if (!(!imageUrl && hasMetadataReference(metadata))) {
                         _context7.n = 8;
                         break;
@@ -3816,7 +3604,7 @@
     return _GetInfo.apply(this, arguments);
   }
   function _GetInfo() {
-    _GetInfo = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9() {
+    _GetInfo = _asyncToGenerator(_regenerator().m(function _callee9() {
       var payload, shares, moviesPath, tvPath, selectedShare, _t6;
       return _regenerator().w(function (_context9) {
         while (1) switch (_context9.p = _context9.n) {
@@ -3871,7 +3659,7 @@
     return _SendCommand.apply(this, arguments);
   }
   function _SendCommand() {
-    _SendCommand = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0(action, torrentData) {
+    _SendCommand = _asyncToGenerator(_regenerator().m(function _callee0(action, torrentData) {
       var _t7;
       return _regenerator().w(function (_context0) {
         while (1) switch (_context0.p = _context0.n) {
@@ -3909,7 +3697,7 @@
     return _SendTask.apply(this, arguments);
   }
   function _SendTask() {
-    _SendTask = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1(selectedTorrent, labels, dtype) {
+    _SendTask = _asyncToGenerator(_regenerator().m(function _callee1(selectedTorrent, labels, dtype) {
       var sourceUri, destination, _t8;
       return _regenerator().w(function (_context1) {
         while (1) switch (_context1.p = _context1.n) {
@@ -4019,7 +3807,7 @@
     return _handleKeeneticAction.apply(this, arguments);
   }
   function _handleKeeneticAction() {
-    _handleKeeneticAction = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(_ref) {
+    _handleKeeneticAction = _asyncToGenerator(_regenerator().m(function _callee(_ref) {
       var action, torrentData, getConfig, config, mediaFiles, downloadDir, dirName, file, _openSelector;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.n) {
@@ -4305,7 +4093,7 @@
     return _authenticateClient.apply(this, arguments);
   }
   function _authenticateClient() {
-    _authenticateClient = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(clientName) {
+    _authenticateClient = _asyncToGenerator(_regenerator().m(function _callee(clientName) {
       var silent,
         client,
         _args = arguments;
@@ -4341,7 +4129,7 @@
     return _executeClientMethod.apply(this, arguments);
   }
   function _executeClientMethod() {
-    _executeClientMethod = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(clientName, methodName) {
+    _executeClientMethod = _asyncToGenerator(_regenerator().m(function _callee2(clientName, methodName) {
       var args,
         options,
         client,
@@ -4438,24 +4226,12 @@
     return _executeClientMethod.apply(this, arguments);
   }
 
-  /**
-   * Оновлення метаданих для одного торента.
-   * Викликається з torrent_actions.js
-   *
-   * @param {Object} torrent - об'єкт торента (як у твоєму списку)
-   * @param {Object} client  - інформація про клієнта (тип + налаштування)
-   */
   function updateMetadataForTorrent(_x, _x2) {
     return _updateMetadataForTorrent.apply(this, arguments);
   }
-  /**
-   * Простий TMDB-флоу для пошуку медіа інформації
-   *
-   * @param {Object} torrent - об'єкт торента
-   * @returns {Promise<Object|null>} - нормалізований результат TMDB або null
-   */
+
   function _updateMetadataForTorrent() {
-    _updateMetadataForTorrent = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(torrent, client) {
+    _updateMetadataForTorrent = _asyncToGenerator(_regenerator().m(function _callee(torrent, client) {
       var mediaInfo, _t;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.n) {
@@ -4500,14 +4276,9 @@
   function findMediaInfoViaTMDB(_x3) {
     return _findMediaInfoViaTMDB.apply(this, arguments);
   }
-  /**
-   * Пошук в TMDB з використанням існуючого парсера
-   *
-   * @param {Object} torrent - торент для пошуку 
-   * @returns {Promise<Array>} - результати пошуку
-   */
+
   function _findMediaInfoViaTMDB() {
-    _findMediaInfoViaTMDB = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(torrent) {
+    _findMediaInfoViaTMDB = _asyncToGenerator(_regenerator().m(function _callee2(torrent) {
       var results;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.n) {
@@ -4521,7 +4292,7 @@
               break;
             }
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_nothing_found') //'Нічого не знайдено для ' + torrent.name
+              text: Lampa.Lang.translate('torrentmanager_nothing_found')
             });
             return _context2.a(2, null);
           case 2:
@@ -4534,14 +4305,9 @@
   function tmdbSearch(_x4) {
     return _tmdbSearch.apply(this, arguments);
   }
-  /**
-   * Показ модального вікна для вибору результату TMDB
-   *
-   * @param {Array} results - масив результатів пошуку
-   * @returns {Promise<Object|null>} - обраний результат або null
-   */
+
   function _tmdbSearch() {
-    _tmdbSearch = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(torrent) {
+    _tmdbSearch = _asyncToGenerator(_regenerator().m(function _callee3(torrent) {
       var results, _t2;
       return _regenerator().w(function (_context3) {
         while (1) switch (_context3.p = _context3.n) {
@@ -4563,53 +4329,27 @@
     return _tmdbSearch.apply(this, arguments);
   }
 
-  /**
-   * Нормалізація результату TMDB до простого об'єкта
-   *
-   * @param {Object} item - результат з TMDB
-   * @returns {Object} - нормалізований об'єкт
-   */
   function normalizeTmdbResult(item) {
     return {
       id: item.id,
       media_type: item.media_type || 'movie',
-      // або за твоїми правилами
+
       title: item.title || item.name,
       year: (item.release_date || item.first_air_date || '').slice(0, 4) || null
     };
   }
 
-  /**
-   * Форматування тегу для метаданих
-   *
-   * @param {Object} mediaInfo - інформація про медіа
-   * @returns {string} - відформатований тег
-   */
   function buildMetadataTag(mediaInfo) {
-    // ПОВИННО відповідати поточному формату тегу в плагіні!
-    // приклад, якщо так уже є:
+
     return mediaInfo.media_type + '/' + mediaInfo.id;
   }
 
-  /**
-   * Оновлення метаданих для Transmission/Keenetic
-   *
-   * @param {Object} torrent - об'єкт торента
-   * @param {Object} client - інформація про клієнта
-   * @param {Object} mediaInfo - інформація про медіа з TMDB
-   */
   function updateTransmissionLikeMetadata(_x5, _x6, _x7) {
     return _updateTransmissionLikeMetadata.apply(this, arguments);
   }
-  /**
-   * Оновлення метаданих для qBittorrent
-   *
-   * @param {Object} torrent - об'єкт торента
-   * @param {Object} client - інформація про клієнта
-   * @param {Object} mediaInfo - інформація про медіа з TMDB
-   */
+
   function _updateTransmissionLikeMetadata() {
-    _updateTransmissionLikeMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(torrent, client, mediaInfo) {
+    _updateTransmissionLikeMetadata = _asyncToGenerator(_regenerator().m(function _callee4(torrent, client, mediaInfo) {
       var label, _t3;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
@@ -4630,7 +4370,7 @@
             return Keenetic.setLabels(torrent.id, label);
           case 4:
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_updated') //'Метадані оновлено'
+              text: Lampa.Lang.translate('torrentmanager_metadata_updated')
             });
             _context4.n = 6;
             break;
@@ -4639,7 +4379,7 @@
             _t3 = _context4.v;
             console.error('TDM', 'updateTransmissionLikeMetadata error:', _t3);
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_error') //'Помилка оновлення метаданих'
+              text: Lampa.Lang.translate('torrentmanager_metadata_error')
             });
           case 6:
             return _context4.a(2);
@@ -4651,26 +4391,20 @@
   function updateQbittorrentMetadata(_x8, _x9, _x0) {
     return _updateQbittorrentMetadata.apply(this, arguments);
   }
-  /**
-   * Оновлення метаданих для Synology
-   *
-   * @param {Object} torrent - об'єкт торента
-   * @param {Object} client - інформація про клієнта
-   * @param {Object} mediaInfo - інформація про медіа з TMDB
-   */
+
   function _updateQbittorrentMetadata() {
-    _updateQbittorrentMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(torrent, client, mediaInfo) {
+    _updateQbittorrentMetadata = _asyncToGenerator(_regenerator().m(function _callee5(torrent, client, mediaInfo) {
       var tagValue, _t4;
       return _regenerator().w(function (_context5) {
         while (1) switch (_context5.p = _context5.n) {
           case 0:
-            tagValue = buildMetadataTag(mediaInfo); // той самий формат, що й при додаванні
+            tagValue = buildMetadataTag(mediaInfo);
             _context5.p = 1;
             _context5.n = 2;
             return Qbittorent.setTags(torrent.id, tagValue);
           case 2:
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_updated') //'Метадані оновлено'
+              text: Lampa.Lang.translate('torrentmanager_metadata_updated')
             });
             _context5.n = 4;
             break;
@@ -4679,7 +4413,7 @@
             _t4 = _context5.v;
             console.error('TDM', 'updateQbittorrentMetadata error:', _t4);
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_error') //'Помилка оновлення метаданих'
+              text: Lampa.Lang.translate('torrentmanager_metadata_error')
             });
           case 4:
             return _context5.a(2);
@@ -4691,14 +4425,9 @@
   function updateSynologyMetadata(_x1, _x10, _x11) {
     return _updateSynologyMetadata.apply(this, arguments);
   }
-  /**
-   * Масове оновлення метаданих для всіх торентів
-   *
-   * @param {Array} torrents - масив торентів
-   * @param {Object} client - інформація про клієнта
-   */
+
   function _updateSynologyMetadata() {
-    _updateSynologyMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(torrent, client, mediaInfo) {
+    _updateSynologyMetadata = _asyncToGenerator(_regenerator().m(function _callee6(torrent, client, mediaInfo) {
       var key, metadataTag, poster, _t5;
       return _regenerator().w(function (_context6) {
         while (1) switch (_context6.p = _context6.n) {
@@ -4725,7 +4454,7 @@
             });
           case 3:
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_updated') //'Метадані оновлено'
+              text: Lampa.Lang.translate('torrentmanager_metadata_updated')
             });
             _context6.n = 5;
             break;
@@ -4734,7 +4463,7 @@
             _t5 = _context6.v;
             console.error('TDM', 'updateSynologyMetadata error:', _t5);
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_error') //'Помилка оновлення метаданих'
+              text: Lampa.Lang.translate('torrentmanager_metadata_error')
             });
           case 5:
             return _context6.a(2);
@@ -4747,7 +4476,7 @@
     return _updateAllMetadata.apply(this, arguments);
   }
   function _updateAllMetadata() {
-    _updateAllMetadata = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(torrents, client) {
+    _updateAllMetadata = _asyncToGenerator(_regenerator().m(function _callee7(torrents, client) {
       var _iterator, _step, torrent, _t6;
       return _regenerator().w(function (_context7) {
         while (1) switch (_context7.p = _context7.n) {
@@ -4784,7 +4513,7 @@
             return _context7.f(7);
           case 8:
             Lampa.Bell.push({
-              text: Lampa.Lang.translate('torrentmanager_metadata_updated_all') //'Оновлення метаданих завершено'
+              text: Lampa.Lang.translate('torrentmanager_metadata_updated_all')
             });
           case 9:
             return _context7.a(2);
@@ -4863,7 +4592,7 @@
     return _handleMetadataAction.apply(this, arguments);
   }
   function _handleMetadataAction() {
-    _handleMetadataAction = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(actionType, torrentData, torrentList, clientName) {
+    _handleMetadataAction = _asyncToGenerator(_regenerator().m(function _callee(actionType, torrentData, torrentList, clientName) {
       var clientConfig;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.n) {
@@ -4977,7 +4706,7 @@
     return _handleTorrentAction.apply(this, arguments);
   }
   function _handleTorrentAction() {
-    _handleTorrentAction = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(action, torrentData) {
+    _handleTorrentAction = _asyncToGenerator(_regenerator().m(function _callee2(action, torrentData) {
       var allTorrents,
         client,
         torrentList,
@@ -5030,7 +4759,7 @@
     return _handleTorrentAction.apply(this, arguments);
   }
 
-  var TorrentStateManager = /*#__PURE__*/function () {
+  var TorrentStateManager = function () {
     function TorrentStateManager() {
       _classCallCheck(this, TorrentStateManager);
       this.torrents = [];
@@ -5045,7 +4774,6 @@
           return;
         }
 
-        // Call update immediately on start to populate torrents right away
         this.update();
         this.timer = this.update.bind(this);
         Lampa.Timer.add(15000, this.timer, true);
@@ -5061,7 +4789,7 @@
     }, {
       key: "update",
       value: function () {
-        var _update = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _update = _asyncToGenerator(_regenerator().m(function _callee() {
           var client_name, isUniversal, new_torrents, has_active_downloads_before, has_active_downloads_after, _t;
           return _regenerator().w(function (_context) {
             while (1) switch (_context.p = _context.n) {
@@ -5152,9 +4880,9 @@
     var network = new Lampa.Reguest();
     var updateTick = null;
     var updateInProgress = false;
-    var sections = []; // Array of PanelSection instances
+    var sections = [];
     var headerItem = null;
-    var allTorrents = []; // Full list of all torrents (for context menu)
+    var allTorrents = [];
     var activeSectionIndex = 0;
     var isHeaderFocused = false;
     var scroll = new Lampa.Scroll({
@@ -5260,7 +4988,7 @@
       return _fetchClientData.apply(this, arguments);
     }
     function _fetchClientData() {
-      _fetchClientData = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(clientType) {
+      _fetchClientData = _asyncToGenerator(_regenerator().m(function _callee2(clientType) {
         var _yield$Promise$all, _yield$Promise$all2, data, info;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.n) {
@@ -5334,7 +5062,7 @@
         resetHeader: true
       });
     };
-    this.create = /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+    this.create = _asyncToGenerator(_regenerator().m(function _callee() {
       var result, _t;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.p = _context.n) {
@@ -5378,11 +5106,9 @@
       }
       allTorrents = torrents;
 
-      // Group into sections by status
       var grouped = groupTorrentsByStatus(torrents);
       self.buildSections(grouped);
 
-      // Initial focus on header, not first section
       if (sections.length > 0) {
         isHeaderFocused = true;
       }
@@ -5399,12 +5125,10 @@
           items: groupItems
         });
 
-        // Wire up item enter handler with access to full torrent list
         section.onItemEnter = function (torrentData) {
           showTorrentMenu(torrentData, allTorrents);
         };
 
-        // Wire up section navigation callbacks (vinyl pattern)
         section.onDown = self.down.bind(self);
         section.onUp = self.up.bind(self);
         section.onBack = self.back.bind(self);
@@ -5438,7 +5162,7 @@
       return _refreshTorrents.apply(this, arguments);
     }
     function _refreshTorrents() {
-      _refreshTorrents = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      _refreshTorrents = _asyncToGenerator(_regenerator().m(function _callee3() {
         var torrents, grouped, newSections, existingSectionElements, existingKeys, bodyFragment, _t2;
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.p = _context3.n) {
@@ -5475,14 +5199,12 @@
             case 5:
               allTorrents = torrents;
 
-              // Classify and diff sections
               grouped = groupTorrentsByStatus(torrents);
               newSections = [];
               SECTION_DEFINITIONS.forEach(function (def) {
                 var groupItems = grouped[def.key];
                 var existing = null;
 
-                // Find existing section by key
                 for (var i = 0; i < sections.length; i++) {
                   if (sections[i].key === def.key) {
                     existing = sections[i];
@@ -5491,11 +5213,11 @@
                 }
                 if (groupItems && groupItems.length > 0) {
                   if (existing) {
-                    // Update existing section
+
                     existing.update(groupItems);
                     newSections.push(existing);
                   } else {
-                    // Create new section
+
                     var section = new PanelSection({
                       key: def.key,
                       title: Lampa.Lang.translate(def.langKey),
@@ -5506,7 +5228,6 @@
                       showTorrentMenu(torrentData, allTorrents);
                     };
 
-                    // Wire up section navigation callbacks (vinyl pattern)
                     section.onDown = self.down.bind(self);
                     section.onUp = self.up.bind(self);
                     section.onBack = self.back.bind(self);
@@ -5525,15 +5246,13 @@
                     newSections.push(section);
                   }
                 } else {
-                  // Section has no items — destroy if exists
+
                   if (existing) {
                     existing.destroy();
                   }
                 }
               });
 
-              // Diff body DOM — preserve existing section elements, remove
-              // stale, add new, reorder. Avoids flicker from body.empty().
               existingSectionElements = body.children('.lmetorrent-section');
               existingKeys = {};
               existingSectionElements.each(function () {
@@ -5543,25 +5262,22 @@
               newSections.forEach(function (section) {
                 var key = section.key;
                 if (existingKeys[key]) {
-                  // Section exists — reuse DOM element (avoids flicker)
+
                   bodyFragment.append(existingKeys[key]);
                   delete existingKeys[key];
                 } else {
-                  // New section — append fresh
+
                   bodyFragment.append(section.render());
                 }
               });
 
-              // Remove sections that are no longer present
               Object.keys(existingKeys).forEach(function (key) {
                 existingKeys[key].remove();
               });
 
-              // Replace body content atomically
               body.empty().append(bodyFragment);
               sections = newSections;
 
-              // Adjust active index if needed
               if (activeSectionIndex >= sections.length) {
                 activeSectionIndex = sections.length - 1;
               }
@@ -5593,7 +5309,7 @@
     }
     this.down = function () {
       if (isHeaderFocused) {
-        // From header, go to first section
+
         isHeaderFocused = false;
         if (sections.length > 0) {
           activeSectionIndex = 0;
@@ -5608,10 +5324,10 @@
     };
     this.up = function () {
       if (isHeaderFocused) {
-        // At header, go to system head
+
         Lampa.Controller.toggle('head');
       } else if (activeSectionIndex <= 0) {
-        // At first section, go to header
+
         isHeaderFocused = true;
         focusHeader();
       } else {
@@ -5678,7 +5394,6 @@
     };
   }
 
-  // plugins/torrentmanager/utils/panel/sectionView.js — Standalone grid component
   function SectionView(object) {
     var network = new Lampa.Reguest();
     var scroll = new Lampa.Scroll({
@@ -5690,7 +5405,6 @@
     var items = [];
     var last = null;
 
-    // Lifecycle
     this.create = function () {
       this.activity.loader(true);
       var filterSection = object.filterSection;
@@ -5699,7 +5413,6 @@
         return this.render();
       }
 
-      // Find section definition for title
       var sectionDef = null;
       for (var i = 0; i < SECTION_DEFINITIONS.length; i++) {
         if (SECTION_DEFINITIONS[i].key === filterSection) {
@@ -5709,7 +5422,6 @@
       }
       var title = sectionDef ? Lampa.Lang.translate(sectionDef.langKey) : filterSection;
 
-      // Update activity title
       var client = Lampa.Storage.field("lmetorrentSelect") || '';
       this.activity.title = title + " \u2014 " + client.toUpperCase() + ' Manager';
       scroll.minus();
@@ -5735,7 +5447,6 @@
           return;
         }
 
-        // Filter by section
         var filtered = torrents.filter(function (t) {
           return classifyState$1(t.state) === filterSection;
         });
@@ -5745,7 +5456,6 @@
           return;
         }
 
-        // Render cards
         filtered.forEach(function (torrentData) {
           var item = new Item(torrentData);
           item.render().on('hover:focus', function () {
@@ -5872,16 +5582,27 @@
           'Access-Control-Allow-Origin: адрес твоего Lampa (например http://lampa.mx, без слэша на конце)<br>' +
           'Access-Control-Allow-Credentials: true' +
         '</div>' +
-        '<div style="opacity: 0.8;">Нельзя вписать несколько адресов через запятую — CORS поддерживает только один точный origin или *. Если источник Lampa всегда один и тот же — этого достаточно.</div>' +
+        '<div style="opacity: 0.8;">Нельзя вписать несколько адресов через запятую — CORS поддерживает только один точный origin или *. Это правило браузера, а не qBittorrent — оно работает независимо от того, включена ли ниже галка про пропуск авторизации.</div>' +
 
-        '<div style="font-weight: 600; margin-top: 1em;">5. Файрвол</div>' +
+        '<div style="font-weight: 600; margin-top: 1em;">5. Пропуск аутентификации (раздел Authentication)</div>' +
+        '<div>«Пропускать аутентификацию клиентов с localhost» — можно оставить включённой, на другие устройства не влияет.</div>' +
+        '<div style="margin-top: 0.4em;">«Пропускать аутентификацию клиентов из разрешённых подсетей» — включи и впиши свою локальную подсеть, например <b>192.168.1.0/24</b> (первые 3 числа — как у IP твоего компьютера, а не обязательно 192.168.8). Это позволяет вообще <b>не указывать Login/Password</b> в плагине — устройства из этой подсети подключаются без пароля.</div>' +
+        '<div style="opacity: 0.8; margin-top: 0.4em;">Важно: это не отменяет пункт 4 — CORS-заголовки всё равно нужны, потому что это ограничение браузера на телефоне, а не проверка на стороне qBittorrent.</div>' +
+
+        '<div style="font-weight: 600; margin-top: 1em;">6. Раздел «Безопасность»</div>' +
+        '<div>«Защита от кликджекинга» — не влияет на работу плагина, можно оставить как есть.</div>' +
+        '<div style="margin-top: 0.4em;">«Защита от межсайтовой подделки запроса (CSRF)» — держи <b>выключенной</b>. Если включишь, qBittorrent начнёт отклонять запросы от Lampa и любых сторонних клиентов.</div>' +
+        '<div style="margin-top: 0.4em;">«Защита куки (требует HTTPS)» — если подключаешься по обычному http:// (без SSL, как почти всегда в локальной сети) и НЕ используешь пропуск авторизации по подсети из пункта 5, а входишь по логину/паролю — эту галку нужно <b>снять</b>, иначе браузер не примет cookie сессии и вход не будет держаться. Если пропуск авторизации по подсети включён — эта галка не критична, cookie просто не нужен.</div>' +
+        '<div style="margin-top: 0.4em;">«Проверка заголовка хоста» — держи выключенной (см. пункт 3). «Домены сервера: *» — пригодится только если когда-нибудь включишь эту проверку, тогда там уже стоит правильное значение.</div>' +
+
+        '<div style="font-weight: 600; margin-top: 1em;">7. Файрвол</div>' +
         '<div>Windows Defender Firewall (и антивирус, если есть) по умолчанию блокирует входящие подключения к qbittorrent.exe от других устройств. Разреши входящие TCP-подключения на порт Web UI для локальной сети.</div>' +
 
-        '<div style="font-weight: 600; margin-top: 1em;">6. Роутер — AP/Client Isolation</div>' +
+        '<div style="font-weight: 600; margin-top: 1em;">8. Роутер — AP/Client Isolation</div>' +
         '<div>Проверь в настройках роутера, что изоляция клиентов выключена и телефон с компьютером в одной подсети (совпадают первые 3 числа IP, например 192.168.1.x).</div>' +
 
-        '<div style="font-weight: 600; margin-top: 1em;">7. Автопоиск в плагине</div>' +
-        '<div>Кнопка «Найти qBittorrent в сети» ищет по портy 8080 в подсетях 192.168.0/1/31/88.x и 10.0.0/1.x. Если у тебя другой порт или подсеть — впиши свою подсеть в поле выше перед поиском.</div>' +
+        '<div style="font-weight: 600; margin-top: 1em;">9. Автопоиск в плагине</div>' +
+        '<div>Кнопка «Найти qBittorrent в сети» ищет по порту 8080 в подсетях 192.168.0/1/31/88.x и 10.0.0/1.x. Если у тебя другой порт или подсеть — впиши свою подсеть в поле выше перед поиском. Без пропуска авторизации из пункта 5 автопоиск может не находить работающий qBittorrent, даже если сервер отвечает.</div>' +
 
         '<div style="font-weight: 600; margin-top: 1em;">Если не подключается</div>' +
         '<div>Проверь адрес: он должен начинаться с http://, содержать актуальный IP компьютера и правильный порт, без пробелов и лишних символов.</div>' +
@@ -5899,7 +5620,7 @@
   }
 
   function Main$1(manifest) {
-    //Создание пункта меню
+
     Lampa.SettingsApi.addComponent({
       component: manifest.component,
       name: manifest.name,
@@ -6007,7 +5728,6 @@
       };
     }
 
-    //Select Client
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
@@ -6030,34 +5750,7 @@
         Lampa.Settings.update();
       }
     });
-    //Proxy TMDB
-    // Lampa.SettingsApi.addParam({
-    //     component: manifest.component,
-    //     param: {
-    //         name: manifest.component + 'proxyTMDB',
-    //         type: 'trigger',
-    //         default: 'false',
-    //         values: {
-    //             true: Lampa.Lang.translate('true'),
-    //             false: Lampa.Lang.translate('false')
-    //         },
-    //     },
-    //     field: {
-    //         name: 'Proxy TMDB posters',
-    //     },
-    //     onRender: function (item) {
-    //         var forbiddenValues = ["universalClient", "synology", "no_client"];
-    //         var clientValue = Lampa.Storage.field(manifest.component + 'proxyTMDB');
-    //         // indexOf возвращает -1, если значения нет в массиве
-    //         if (forbiddenValues.indexOf(clientValue) === -1) {
-    //             item.show();
-    //         } else item.hide();
-    //     },
-    //     onChange: function () {
-    //         Lampa.Settings.update();
-    //     }
-    // })
-    //Universal action
+
     var universalActionValues = Lampa.Platform.is('android') ? {
       openAndroid: Lampa.Lang.translate('openUniversal'),
       click: Lampa.Lang.translate('copyUniversal')
@@ -6085,7 +5778,7 @@
         Lampa.Settings.update();
       }
     });
-    //qBittorent
+
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
@@ -6109,8 +5802,7 @@
       param: {
         name: manifest.component + "qBittorentUrl",
         type: "input",
-        //доступно select,input,trigger,title,static
-        //values: `${Lampa.Storage.get("qBittorentUrl") || ""}`,
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6244,7 +5936,7 @@
       component: manifest.component,
       param: {
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false,
         name: manifest.component + "qBittorentTweak"
       },
@@ -6260,13 +5952,13 @@
         Lampa.Settings.update();
       }
     });
-    // qBittorent Tweak part
+
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
         name: manifest.component + "qBittorentSequentialDownload",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6286,7 +5978,7 @@
       param: {
         name: manifest.component + "qBittorentfirstLastPiecePrio",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6306,7 +5998,7 @@
       param: {
         name: manifest.component + "qBittorentProxy",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6327,7 +6019,7 @@
       param: {
         name: manifest.component + "qBittorentMovies",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6349,7 +6041,7 @@
       param: {
         name: manifest.component + "qBittorentTV",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6366,13 +6058,13 @@
         Lampa.Settings.update();
       }
     });
-    //Transmission
+
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
         name: manifest.component + "transmissionUrl",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6392,7 +6084,7 @@
       param: {
         name: manifest.component + "transmissionUser",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6413,7 +6105,7 @@
       component: manifest.component,
       param: {
         name: manifest.component + "transmissionPass",
-        type: "button" //доступно select,input,trigger,title,static
+        type: "button"
       },
       field: {
         name: 'Password'
@@ -6468,7 +6160,7 @@
       component: manifest.component,
       param: {
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false,
         name: manifest.component + "transmissionTweak"
       },
@@ -6484,13 +6176,13 @@
         Lampa.Settings.update();
       }
     });
-    // Transmission Tweak part
+
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
         name: manifest.component + "transmissionAutostart",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": true
       },
       field: {
@@ -6510,7 +6202,7 @@
       param: {
         name: manifest.component + "transmissionSequentialDownload",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6530,7 +6222,7 @@
       param: {
         name: manifest.component + "transmissionProxy",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6551,7 +6243,7 @@
       param: {
         name: manifest.component + "transmissionPath",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '/transmission/rpc',
         values: '/transmission/rpc',
         "default": '/transmission/rpc'
@@ -6574,7 +6266,7 @@
       param: {
         name: manifest.component + "transmissionMovies",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6596,7 +6288,7 @@
       param: {
         name: manifest.component + "transmissionTV",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6613,14 +6305,13 @@
         Lampa.Settings.update();
       }
     });
-    //Synology
+
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
         name: manifest.component + "synologyUrl",
         type: "input",
-        //доступно select,input,trigger,title,static
-        //values: `${Lampa.Storage.get("synologyUrl") || ""}`,
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6640,7 +6331,7 @@
       param: {
         name: manifest.component + "synologyUser",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6661,7 +6352,7 @@
       component: manifest.component,
       param: {
         name: manifest.component + "synologyPass",
-        type: "button" //доступно select,input,trigger,title,static
+        type: "button"
       },
       field: {
         name: 'Password'
@@ -6717,7 +6408,7 @@
       param: {
         name: manifest.component + "synologyPathMovies",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6739,7 +6430,7 @@
       param: {
         name: manifest.component + "synologyPathTV",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6760,7 +6451,7 @@
       component: manifest.component,
       param: {
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false,
         name: manifest.component + "synologyProxy"
       },
@@ -6777,15 +6468,13 @@
         Lampa.Settings.update();
       }
     });
-    // Synology Tweak part
 
-    // Keenetic Transmission
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
         name: manifest.component + "keeneticUrl",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6805,7 +6494,7 @@
       param: {
         name: manifest.component + "keeneticUser",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6826,7 +6515,7 @@
       component: manifest.component,
       param: {
         name: manifest.component + "keeneticPass",
-        type: "button" //доступно select,input,trigger,title,static
+        type: "button"
       },
       field: {
         name: 'Password'
@@ -6882,7 +6571,7 @@
       param: {
         name: manifest.component + "keeneticWebdavUrl",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -6902,7 +6591,7 @@
       component: manifest.component,
       param: {
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false,
         name: manifest.component + "keeneticTweak"
       },
@@ -6919,13 +6608,12 @@
       }
     });
 
-    // Keenetic Tweak part
     Lampa.SettingsApi.addParam({
       component: manifest.component,
       param: {
         name: manifest.component + "keeneticAutostart",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": true
       },
       field: {
@@ -6945,7 +6633,7 @@
       param: {
         name: manifest.component + "keeneticSequentialDownload",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6965,7 +6653,7 @@
       param: {
         name: manifest.component + "keeneticProxy",
         type: "trigger",
-        //доступно select,input,trigger,title,static
+
         "default": false
       },
       field: {
@@ -6986,7 +6674,7 @@
       param: {
         name: manifest.component + "keeneticPath",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '/transmission/rpc',
         values: '/transmission/rpc',
         "default": '/transmission/rpc'
@@ -7009,7 +6697,7 @@
       param: {
         name: manifest.component + "keeneticMovies",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -7031,7 +6719,7 @@
       param: {
         name: manifest.component + "keeneticTV",
         type: "input",
-        //доступно select,input,trigger,title,static
+
         placeholder: '',
         values: '',
         "default": ''
@@ -7226,21 +6914,8 @@
     });
   }
 
-  /**
-   * Sonarr/Radarr API Module for Torrent Manager
-   *
-   * Provides external API search as a fallback when label-based matching fails.
-   * Results are cached in-memory with a 12-hour TTL and persisted to Lampa.Storage.
-   * Pattern from MovieEnhancer/utils/wm_quality.js.
-   * Used by cardIntegration.js and full.js to resolve TMDB IDs for clients
-   * that do not support labels (e.g. Synology).
-   */
-
-  /*
-   * In-memory cache with LRU eviction — persisted to Lampa.Storage.
-   */
   var CACHE_STORAGE_KEY = 'lme_torrentmanager_api_cache';
-  var CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+  var CACHE_TTL = 12 * 60 * 60 * 1000;
   var CACHE_SIZE = 500;
   var memoryCache = {};
   var cacheInitialized = false;
@@ -7261,7 +6936,7 @@
   }
   function setCached(key, value) {
     initCache();
-    // LRU eviction if cache is full
+
     var size = Object.keys(memoryCache).length;
     if (size >= CACHE_SIZE) {
       var oldest = null;
@@ -7288,33 +6963,16 @@
     }, 500);
   }
 
-  /*
-   * Inflight map — prevents duplicate concurrent requests for the same key.
-   * Pattern from MovieEnhancer/utils/wm_quality.js (inflight = {}).
-   */
   var inflight$1 = {};
 
-  /*
-   * CORS proxy helper — wraps a URL through cors.io to avoid browser CORS blocks.
-   * cors.io returns { url, status, headers, body: "..." } — parseResponse handles this.
-   */
   var CORS_PROXY = 'https://cors.io/?url=';
   function proxyUrl(url) {
     return CORS_PROXY + encodeURIComponent(url);
   }
 
-  /**
-   * Normalize response data — handles cors.io wrapped format and raw responses.
-   * cors.io returns: { url, status, headers, body: "<json string>" }
-   * Lampa.Network.silent may also return a string or a pre-parsed object.
-   *
-   * @param {*} response - Raw response from Lampa.Network.silent
-   * @returns {Object|Array|null} Parsed data or null
-   */
   function parseResponse(response) {
     if (!response) return null;
 
-    // cors.io wraps response: { url, status, headers, body: "..." }
     if (response.url && response.body) {
       try {
         return JSON.parse(response.body);
@@ -7323,7 +6981,6 @@
       }
     }
 
-    // Direct JSON string
     if (typeof response === 'string') {
       try {
         return JSON.parse(response);
@@ -7332,42 +6989,20 @@
       }
     }
 
-    // Already-parsed object
     if (_typeof(response) !== 'object') return null;
     return response;
   }
 
-  /**
-   * Build a cache key from query string to avoid special character collisions.
-   * @param {string} prefix - 'sonarr' or 'radarr'
-   * @param {string} query - Raw search query
-   * @returns {string} Sanitized cache key
-   */
   function buildCacheKey(prefix, query) {
     return prefix + '_' + String(query).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
   }
 
-  /**
-   * Search Sonarr Skyhook for TV series by title or IMDB ID.
-   * Uses GET https://skyhook.sonarr.tv/v1/tvdb/search/en/?term={query}
-   * For IMDB search, use term=imdb:{id} for exact match.
-   *
-   * @param {string} titleOrImdb - Series title or "imdb:{id}"
-   * @returns {Promise<{tmdb_id: number|null, imdb_id: string|null, title: string|null, year: string|null, matched_via: string}|null>}
-   */
   function searchSonarr(_x) {
     return _searchSonarr.apply(this, arguments);
   }
 
-  /**
-   * Search Radarr Video API for movies by title.
-   * Uses GET https://api.radarr.video/v1/search?q={query}
-   *
-   * @param {string} title - Movie title
-   * @returns {Promise<{tmdb_id: number|null, imdb_id: string|null, title: string|null, year: string|null, matched_via: string}|null>}
-   */
   function _searchSonarr() {
-    _searchSonarr = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(titleOrImdb) {
+    _searchSonarr = _asyncToGenerator(_regenerator().m(function _callee(titleOrImdb) {
       var cacheKey, cached, url, data, result, normalized, status, _t;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.p = _context.n) {
@@ -7378,7 +7013,7 @@
             }
             return _context.a(2, null);
           case 1:
-            cacheKey = buildCacheKey('sonarr', titleOrImdb); // Check in-memory cache FIRST
+            cacheKey = buildCacheKey('sonarr', titleOrImdb);
             cached = getCached(cacheKey);
             if (!cached) {
               _context.n = 2;
@@ -7447,7 +7082,7 @@
     return _searchRadarr.apply(this, arguments);
   }
   function _searchRadarr() {
-    _searchRadarr = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(title) {
+    _searchRadarr = _asyncToGenerator(_regenerator().m(function _callee2(title) {
       var cacheKey, cached, url, data, result, normalized, status, _t2;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.p = _context2.n) {
@@ -7458,7 +7093,7 @@
             }
             return _context2.a(2, null);
           case 1:
-            cacheKey = buildCacheKey('radarr', title); // Check in-memory cache FIRST
+            cacheKey = buildCacheKey('radarr', title);
             cached = getCached(cacheKey);
             if (!cached) {
               _context2.n = 2;
@@ -7528,7 +7163,7 @@
     return _startClient.apply(this, arguments);
   }
   function _startClient() {
-    _startClient = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(client) {
+    _startClient = _asyncToGenerator(_regenerator().m(function _callee2(client) {
       var data, info, result, _t2;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.p = _context2.n) {
@@ -7595,11 +7230,10 @@
             if (r && r.data) {
               var torrent = findTorrent(r.data, e.object.method, e.object.id);
               if (torrent) {
-                // Create button element
+
                 var $button = $("<div class=\"full-start__button selector button--lme_torrent\">\n                                <svg fill=\"currentColor\" version=\"1.1\" id=\"Capa_1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 588.601 588.6\" xml:space=\"preserve\"><g id=\"SVGRepo_bgCarrier\" stroke-width=\"0\"></g><g id=\"SVGRepo_tracerCarrier\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></g><g id=\"SVGRepo_iconCarrier\"> <g> <path d=\"M168.405,288.048c-3.019,0.084-4.936,0.419-5.864,0.728v20.174l5.632-0.059c6.463-0.078,10.558-4.35,10.558-10.768 C178.73,291.017,174.636,287.869,168.405,288.048z\"></path> <path d=\"M82.324,290.445c-8.177,0.227-12.49,10.278-12.49,22.491c0,12.045,4.588,21.674,12.49,21.737 c8.089,0.079,12.701-9.761,12.701-22.412C95.018,300.86,90.688,290.213,82.324,290.445z\"></path> <path d=\"M125.722,289.235c-2.813,0.082-4.617,0.396-5.484,0.696v19.515l5.276-0.059c6.03-0.074,9.858-4.203,9.858-10.404 C135.372,292.117,131.544,289.074,125.722,289.235z\"></path> <path d=\"M539.568,49.201h-178.2c-0.786,0-1.561,0.074-2.347,0.124V0L11.228,46.419v494.562L359.032,588.6v-50.814 c0.78,0.053,1.55,0.115,2.341,0.115h178.2c20.852,0,37.8-16.959,37.8-37.8v-413.1C577.368,66.161,560.425,49.201,539.568,49.201z M361.368,70.801h178.2c8.928,0,16.2,7.267,16.2,16.2v271.329c-23.272-58.704-70.2-90.393-132.864-99.347 c-18.879-2.705-21.79,0.886-19.687,19.517c1.482,13.252,11.786,9.158,18.747,10.022c56.574,7.085,103.982,49.642,115.288,104.147 c7.267,34.974-1.266,71.872-21.305,101.05h-14.08c36.64-49.116,38.834-102.389,2.964-149.575 c-33.307-43.802-99.62-61.505-145.8-42.604V71.043C359.797,70.93,360.572,70.801,361.368,70.801z M359.032,333.687 c2.226-0.891,4.25-1.703,6.265-2.479c45.752-17.649,97.817-0.606,122.096,39.946c23.757,39.726,14.223,90.034-22.892,122.565 h-14.122c3.912-2.942,7.73-6.181,11.411-9.734c26.314-25.376,35.374-56.162,24.01-90.925 c-11.527-35.258-37.446-55.244-74.007-60.592c-18.114-2.647-36.956,1.244-52.761,9.661V333.687z M359.032,378.891 c0.169-0.163,0.327-0.354,0.506-0.517c22.939-22.17,62.259-21.479,84.555,1.397c22.687,23.277,22.887,60.307-2.479,81.949 c-13.11,11.175-29.995,20.408-46.659,24.49c-11.935,2.921-23.905,4.777-35.923,6.021V378.891z M296.331,275.25l49.401-1.7v11.156 l-19.232,0.514v61.077l-11.938-0.19v-60.57l-18.236,0.493V275.25H296.331z M60.247,292.37l-12.49,0.332v49.265l-7.771-0.11v-48.953 l-11.929,0.321V284.5l32.189-1.113V292.37z M81.857,343.459c-12.677-0.211-20.545-12.983-20.545-30.26 c0-18.077,8.521-31.118,21.209-31.572c13.458-0.466,21.526,12.714,21.526,30.085C104.048,332.153,94.521,343.67,81.857,343.459z M136.836,343.343c-0.738-1.867-1.917-6.982-3.31-14.776c-1.395-8.147-3.73-10.721-8.819-10.895l-4.47,0.025v25.393l-8.701-0.138 v-60.515c3.267-0.828,8.208-1.55,13.324-1.73c7.056-0.242,11.907,1.071,15.238,4.504c2.745,2.797,4.316,7.148,4.316,12.469 c0,8.137-4.398,13.685-9.042,15.868v0.284c3.533,1.641,5.688,6.012,6.951,12.056c1.572,7.857,2.911,15.161,3.963,17.607 L136.836,343.343z M180.312,344.023c-0.788-1.935-2.059-7.229-3.554-15.298c-1.484-8.427-3.995-11.096-9.429-11.264l-4.788,0.021 v26.262l-9.305-0.143v-62.574c3.488-0.865,8.754-1.608,14.241-1.798c7.549-0.274,12.738,1.086,16.313,4.627 c2.942,2.896,4.617,7.394,4.617,12.906c0,8.412-4.704,14.16-9.682,16.428v0.295c3.783,1.688,6.096,6.207,7.446,12.477 c1.68,8.127,3.119,15.684,4.237,18.22L180.312,344.023z M231.742,344.82l-33.874-0.533v-65.646l32.598-1.118v10.083l-22.539,0.609 v17.075l21.266-0.306v9.978l-21.266,0.137v19.438l23.815,0.189V344.82z M241.052,277.151l12.234-0.422l15.515,29.141 c4.061,7.668,7.604,15.688,10.434,23.235h0.19c-0.73-9.313-1.004-18.299-1.004-28.94v-24.301l10.491-0.366v70.208l-11.675-0.18 l-15.881-30.47c-3.828-7.515-7.791-15.884-10.702-23.535l-0.264,0.105c0.43,8.812,0.517,17.819,0.517,29.072v24.421l-9.848-0.152 v-67.816H241.052z M539.568,516.301h-4.915c8.644-11.56,15.746-23.467,21.115-35.743v19.543 C555.769,509.035,548.507,516.301,539.568,516.301z\"></path> </g> </g></svg>\n                                <span>".concat(torrent.completed > 0 ? "".concat(getStandardizedStateName(torrent.state), " - ").concat(Number((torrent.completed * 100).toFixed(2)), "%") : getStandardizedStateName(torrent.state), "</span>\n                            </div>"));
 
-                // Attach event handlers
-                $button.on("hover:enter", /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+                $button.on("hover:enter", _asyncToGenerator(_regenerator().m(function _callee() {
                   var enabled, menu;
                   return _regenerator().w(function (_context) {
                     while (1) switch (_context.n) {
@@ -7617,7 +7251,6 @@
                           action: 'delete'
                         });
 
-                        // Add play option for Keenetic client
                         if (activeClient === 'keenetic') {
                           menu.push({
                             title: Lampa.Lang.translate('play'),
@@ -7625,24 +7258,22 @@
                           });
                         }
 
-                        // Add full delete option for clients that support it
                         if (activeClient !== 'synology') menu.push({
                           title: Lampa.Lang.translate('fullDelete'),
                           action: 'delete',
                           deleteFiles: true
                         });
 
-                        // Set menu
                         Lampa.Select.show({
                           title: torrent.completed > 0 ? "".concat(getStandardizedStateName(torrent.state), " - ").concat(Number((torrent.completed * 100).toFixed(2)), "%") : getStandardizedStateName(torrent.state),
                           items: menu,
                           onBack: function onBack() {
-                            // Повертаємось до попереднього контролера, якщо він існує
+
                             var currentController = Lampa.Controller.enabled();
                             if (currentController && currentController.name !== enabled) {
                               Lampa.Controller.toggle(enabled);
                             } else {
-                              // Якщо контролер не змінився, просто вимикаємо меню
+
                               Lampa.Controller.toggle('menu');
                             }
                           },
@@ -7658,27 +7289,23 @@
                   }, _callee);
                 })));
 
-                // Remove existing torrent button before adding new one
                 e.object.activity.render().find('.full-start-new__buttons').find('.button--lme_torrent').remove();
 
-                // Append new button to container
                 e.object.activity.render().find('.full-start-new__buttons').append($button);
 
-                // Manually bind hover events that Lampa normally binds via .selector in full/start.js
                 $button.on('hover:focus', function () {
                   $(this).addClass('focus');
                 }).on('hover:blur', function () {
                   $(this).removeClass('focus');
                 }).on('hover:hover', function () {
-                  // hover state is handled by CSS class .selector
+
                 }).on('hover:touch', function () {
-                  // touch state
+
                 });
 
-                // Add button to Controller collection for spatial navigation
                 Lampa.Controller.collectionAppend($button);
               } else {
-                // Fallback: try Sonarr/Radarr for clients without labels (Synology, etc.)
+
                 performFallbackLookup(e.object, r.data);
               }
             } else {
@@ -7690,18 +7317,8 @@
     });
   }
 
-  /**
-   * Fallback lookup when label-based matching fails.
-   * Attempts to resolve the TMDB ID via Sonarr/Radarr external API,
-   * then re-checks the torrent list. Results are cached in IndexedDB.
-   * Non-blocking — always resolves silently on errors.
-   *
-   * @param {Object} movieData - Movie data from the 'full' event (e.object)
-   * @param {Array} torrentData - Array of torrent objects from GetData
-   * @param {string} activeClient - Active torrent client name
-   */
   function performFallbackLookup(movieData, torrentData, activeClient) {
-    // Extract movie info from event object
+
     var movie = movieData.data && movieData.data.movie ? movieData.data.movie : movieData;
     var method = movieData.method || (movie.first_air_date ? 'tv' : 'movie');
     var id = movieData.id || movie.id;
@@ -7709,7 +7326,6 @@
     var imdbId = movie.imdb_id || movieData.imdb_id;
     if (!id || !title) return;
 
-    // Determine search strategy
     var searchPromise = null;
     if (method === 'tv' && imdbId) {
       searchPromise = searchSonarr('imdb:' + imdbId);
@@ -7722,7 +7338,6 @@
     searchPromise.then(function (meta) {
       if (!meta || !meta.tmdb_id) return;
 
-      // Re-check torrents with resolved TMDB ID
       var resolvedLabel = method + '/' + meta.tmdb_id;
       var resolvedTorrent = null;
       for (var i = 0; i < torrentData.length; i++) {
@@ -7733,7 +7348,7 @@
         }
       }
       if (resolvedTorrent) {
-        // Cache the result so subsequent visits use IndexedDB directly
+
         saveMetadata(String(resolvedTorrent.id), {
           tmdb_id: meta.tmdb_id,
           media_type: method,
@@ -7743,18 +7358,10 @@
         })["catch"](function () {});
       }
     })["catch"](function () {
-      // Silent fallback — never block UI on network errors
+
     });
   }
 
-  /**
-   * Utility functions for Torrent Manager plugin
-   */
-
-  /**
-   * Create a panel navigation item for Lampa.Select.show
-   * @returns {Function} Function that calls Lampa.Activity.push
-   */
   function createPanelNavigationItem() {
     return function () {
       Lampa.Activity.push({
@@ -7766,7 +7373,7 @@
     };
   }
 
-  var HeaderIconController = /*#__PURE__*/function () {
+  var HeaderIconController = function () {
     function HeaderIconController(element) {
       _classCallCheck(this, HeaderIconController);
       this.element = $(element);
@@ -7796,10 +7403,9 @@
           var state = String(torrent && torrent.state || '').toLowerCase();
           return state.indexOf('download') >= 0 || state.indexOf('check') >= 0;
         }).length;
-        // Create items for Lampa.Select.show
+
         var items = [
-        // Panel navigation item
-        //createPanelNavigationItem(),
+
         {
           title: String(Lampa.Storage.get('lmetorrentSelect') || '').toUpperCase() + " Manager",
           action: 'panel',
@@ -7825,7 +7431,7 @@
             } else if (item.action === 'panel') {
               item.onSelect();
             }
-            // For summary item, we could show a general menu or just do nothing
+
           }
         });
       }
@@ -7855,7 +7461,7 @@
   }();
 
   var TORRENT_ICON = "\n    <svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n        <path d=\"M12 4L12 14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n        <path d=\"M16 10L12 14L8 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n        <path d=\"M4 18H20\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/>\n    </svg>\n";
-  var DomInjector = /*#__PURE__*/function () {
+  var DomInjector = function () {
     function DomInjector() {
       _classCallCheck(this, DomInjector);
     }
@@ -7870,33 +7476,14 @@
   }();
   var DomInjector$1 = new DomInjector();
 
-  /**
-   * Home Row integration for Torrent Manager.
-   * Registers a Lampa.ContentRows line on the main screen showing
-   * active torrents (downloading + seeding) with a "More" button
-   * that navigates to the full lmetorrentPanel component.
-   */
-
-  // Quality detection regex matching panelItem.js for lmetorrent_item__card template
   var regexp2 = /(?:PPV.)?[HP]DTV|(?:HD)?TC|[cC]am|(?:HD)?CAM|B[rR]Rip|WEBRip|WEB-Rip|WEB-DL|WEB|TS|(?:PPV )?WEB-?DL(?: DVDRip)?|H[dD]Rip|DVDRip|DVDRiP|DVDRIP|CamRip|W[EB]B[rR]ip|HDRIP|[Bb]lu[Rr]ay|DvDScr|hdtv/;
 
-  /**
-   * Build a CSS class string based on completion progress.
-   * Copies getProgressClass from panelItem.js.
-   * @param {number} progress - 0–100
-   * @returns {string} CSS class name
-   */
   function getProgressClass(progress) {
     if (progress >= 100) return 'is-high';
     if (progress >= 50) return 'is-mid';
     return 'is-low';
   }
 
-  /**
-   * Card class for rendering a single torrent item on the home screen row.
-   * Implements the cardClass interface required by Lampa.ContentRows.
-   * Adapts the lmetorrent_item__card template following main_channel.js pattern.
-   */
   function HomeTorrentCard(torrentData, playlist) {
     var self = this;
     this.data = torrentData;
@@ -7919,7 +7506,7 @@
         showTorrentMenu(self.data, self.playlist);
       });
       self.card.on('hover:focus', function () {
-        // Scroll tracking handled by the Lampa row system
+
       });
     };
     this.render = function (js) {
@@ -7937,11 +7524,6 @@
     this.use = function () {};
   }
 
-  /**
-   * Card class for the "More" button rendered as the last item in the home row.
-   * Renders immediately with other cards (no IntersectionObserver delay).
-   * Navigates to lmetorrentPanel on hover:enter.
-   */
   function HomeMoreCard() {
     var self = this;
     this.card = null;
@@ -7969,13 +7551,8 @@
     this.use = function () {};
   }
 
-  /**
-   * Process torrent list, filter to active ones, prepare callback data.
-   * @param {Array} torrents - Array of torrent data objects
-   * @param {Function} callback - ContentRows callback
-   */
   function processTorrents(torrents, callback) {
-    // Filter: only downloading and seeding torrents
+
     var activeTorrents = [];
     for (var i = 0; i < torrents.length; i++) {
       var state = classifyState$1(torrents[i].state);
@@ -7988,18 +7565,14 @@
       return;
     }
 
-    // Limit to 6 cards max
     var displayItems = activeTorrents.slice(0, 6);
 
-    // Set createInstance on each item for the cardClass interface
     Lampa.Utils.extendItemsParams(displayItems, {
       createInstance: function createInstance(item) {
         return new HomeTorrentCard(item, activeTorrents);
       }
     });
 
-    // Add "More" card as the last item — rendered immediately with other cards
-    // instead of relying on total_pages onVisible (IntersectionObserver delay).
     var moreItem = {
       params: {
         createInstance: function createInstance() {
@@ -8014,12 +7587,6 @@
     });
   }
 
-  /**
-   * Register the home screen content row for Torrent Manager.
-   * Only shows on screen: ['main'], index 0 (first position).
-   * Displays max 6 active torrents (downloading + seeding).
-   * Navigates to lmetorrentPanel on "More" button.
-   */
   function init$1() {
     if (!Lampa || !Lampa.ContentRows || typeof Lampa.ContentRows.add !== 'function') return;
     Lampa.ContentRows.add({
@@ -8029,10 +7596,9 @@
       screen: ['main'],
       call: function call(params, screen) {
         return function (callback) {
-          // Primary data source: TorrentStateManager.torrents (updated every 15s)
+
           var torrents = TorrentStateManager$1.torrents;
 
-          // If state manager has no data yet, try direct API call
           if (!torrents || !torrents.length) {
             var client = Lampa.Storage.field('lmetorrentSelect');
             if (hasClient(client)) {
@@ -8061,32 +7627,8 @@
     init: init$1
   };
 
-  /**
-   * Card Integration Module for Torrent Manager
-   *
-   * Adds torrent status indicators to catalog card icons.
-   * Follows the exact pattern from MovieEnhancer/utils/wm_quality.js:
-   *   - Hooks into Lampa.Maker.map('Card').Card.onVisible
-   *   - Preserves original method via apply(self)
-   *   - Uses inflight map to avoid duplicate API requests
-   *   - Silent fallback on errors — never blocks UI
-   *
-   * Lookup chain:
-   *   A. Direct label match in TorrentStateManager.torrents
-   *   B. IndexedDB cache via db.getMetadataByTmdbId()
-   *   C. External API (Sonarr/Radarr) for clients without labels
-   */
-
-  // Inflight map to prevent duplicate concurrent API requests for the same card
   var inflight = {};
 
-  /**
-   * Map raw torrent state string to a CSS-friendly status category.
-   * Mirrors classifyState from panel/statusClassifier.js for consistency.
-   *
-   * @param {string} state - Raw torrent state string
-   * @returns {string} Normalized status: downloading|seeding|completed|paused|checking|errored
-   */
   function classifyState(state) {
     var n = (state || '').toLowerCase().trim();
     if (/^(downloading|metadl|forceddl|stalleddl|forcedmetadl|downloading metadata)$/.test(n)) return 'downloading';
@@ -8098,13 +7640,6 @@
     return 'errored';
   }
 
-  /**
-   * Build SVG icon HTML for a given torrent status.
-   * Icons are inline SVGs placed inside .card__icons-inner.
-   *
-   * @param {string} state - Normalized torrent status
-   * @returns {string} SVG HTML string or empty string
-   */
   function iconHtml(state) {
     var svgs = {
       downloading: '<svg class="card__torrent-icon card__torrent-icon--downloading" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M13 5v8h3l-4 5-4-5h3V5h2zm-9 12v2h16v-2H4z"/></svg>',
@@ -8117,14 +7652,6 @@
     return svgs[state] || '';
   }
 
-  /**
-   * Find a torrent by label matching (mediaType/id) in the TorrentStateManager data.
-   *
-   * @param {Array} torrents - Array of torrent objects from TorrentStateManager
-   * @param {string} mediaType - 'movie' or 'tv'
-   * @param {number|string} id - TMDB ID
-   * @returns {Object|null} Matching torrent or null
-   */
   function findTorrentByLabels(torrents, mediaType, id) {
     var label = mediaType + '/' + id;
     for (var i = 0; i < torrents.length; i++) {
@@ -8134,22 +7661,13 @@
     return null;
   }
 
-  /**
-   * Render torrent status indicator on a card element.
-   * Adds CSS classes and an SVG icon inside .card__icons-inner.
-   *
-   * @param {jQuery} $card - Card jQuery element (self.html from onVisible)
-   * @param {Object} torrent - Matched torrent object
-   */
   function renderStatus($card, torrent) {
     if (!$card || !$card.length) return;
     var state = classifyState(torrent.state);
 
-    // Update CSS classes on the card
     $card.removeClass('card--torrent-active card--torrent-downloading card--torrent-seeding ' + 'card--torrent-complete card--torrent-paused');
     $card.addClass('card--torrent-active card--torrent-' + state);
 
-    // Inject SVG icon into the icons container
     var $icons = $card.find('.card__icons-inner');
     if ($icons.length) {
       $icons.find('.card__torrent-icon').remove();
@@ -8157,11 +7675,6 @@
     }
   }
 
-  /**
-   * Initialize card integration.
-   * Must be called once after Lampa is ready (from initializePlugin).
-   * Hooks Card.onVisible to add torrent status icons on card render.
-   */
   function init() {
     if (!Lampa.Maker) {
       console.error('TDM', 'Lampa.Maker is not defined!');
@@ -8175,17 +7688,14 @@
     var onVisible = card.Card.onVisible;
     card.Card.onVisible = function () {
       var self = this;
-      onVisible.apply(self); // Call original method first
+      onVisible.apply(self);
 
-      // Guard: card must have data
       if (!self.data) return;
 
-      // Access movie info — data may be nested under .movie or at root
       var movie = self.data.movie || self.data;
       if (!movie || !movie.id) return;
       var id = movie.id;
 
-      // Guard: skip non-numeric IDs (music cards, etc.)
       if (typeof id !== 'number' && !/^\d+$/.test(id)) {
         return;
       }
@@ -8193,17 +7703,15 @@
       var title = movie.title || movie.original_title || movie.name || '';
       var imdbId = movie.imdb_id;
 
-      // Wrap self.html in jQuery once for use in renderStatus calls
       var $card = $(self.html);
 
-      // Step A: Direct label match in TorrentStateManager (fastest path)
       var torrents = TorrentStateManager$1.torrents;
       var torrent = null;
       if (torrents && torrents.length) {
         torrent = findTorrentByLabels(torrents, mediaType, id);
       }
       if (torrent) {
-        // Store card data for live update lookup via torrents:updated
+
         self.html.dataset.torrentCardData = JSON.stringify({
           id: id,
           mediaType: mediaType
@@ -8212,15 +7720,13 @@
         return;
       }
 
-      // Prevent duplicate async lookups for the same card
       var inflightKey = String(id) + '_' + mediaType;
       if (inflight[inflightKey]) return;
       inflight[inflightKey] = true;
 
-      // Step B: Check IndexedDB cache for previously resolved metadata
       getMetadataByTmdbId(id).then(function (cachedMeta) {
         if (cachedMeta && cachedMeta.torrent_id && torrents && torrents.length) {
-          // Found cached match — verify torrent still exists in state manager
+
           for (var i = 0; i < torrents.length; i++) {
             if (torrents[i].id === cachedMeta.torrent_id) {
               self.html.dataset.torrentCardData = JSON.stringify({
@@ -8234,10 +7740,9 @@
           }
         }
 
-        // Step C: External API search (Sonarr/Radarr) — only for visible cards
         var searchPromise = null;
         if (mediaType === 'tv' && imdbId) {
-          // Prefer IMDB ID search for precise match
+
           searchPromise = searchSonarr('imdb:' + imdbId);
         } else if (mediaType === 'tv' && title) {
           searchPromise = searchSonarr(title);
@@ -8247,7 +7752,7 @@
         if (searchPromise) {
           searchPromise.then(function (meta) {
             if (meta && meta.tmdb_id) {
-              // Check if a torrent exists for the resolved TMDB ID
+
               var resolvedTorrent = findTorrentByLabels(torrents, mediaType, meta.tmdb_id);
               if (resolvedTorrent) {
                 self.html.dataset.torrentCardData = JSON.stringify({
@@ -8256,7 +7761,6 @@
                 });
                 renderStatus($card, resolvedTorrent);
 
-                // Cache the resolved mapping for future lookups
                 saveMetadata(String(resolvedTorrent.id), {
                   tmdb_id: meta.tmdb_id,
                   media_type: mediaType,
@@ -8267,7 +7771,7 @@
               }
             }
           })["catch"](function () {
-            // Silent fallback — never block UI on network errors
+
           }).then(function () {
             delete inflight[inflightKey];
           });
@@ -8279,12 +7783,10 @@
       });
     };
 
-    // Subscribe to live torrent updates to refresh visible card icons
     Lampa.Listener.follow('torrents:updated', function () {
       var torrents = TorrentStateManager$1.torrents;
       if (!torrents || !torrents.length) return;
 
-      // Only update cards that already have torrent indicators
       $('.card--torrent-active').each(function () {
         var $card = $(this);
         var cardDataStr = this.dataset.torrentCardData;
@@ -8299,7 +7801,7 @@
         if (updatedTorrent) {
           renderStatus($card, updatedTorrent);
         } else {
-          // Torrent no longer exists — remove indicators
+
           $card.removeClass('card--torrent-active card--torrent-downloading card--torrent-seeding ' + 'card--torrent-complete card--torrent-paused');
           $card.find('.card__torrent-icon').remove();
         }
@@ -8310,9 +7812,6 @@
     init: init
   };
 
-  /** 
-   * Plugin manifest information
-   */
   var MANIFEST = {
     type: 'other',
     version: '3.4',
@@ -8325,29 +7824,17 @@
   var SELECT_KEY = "".concat(MANIFEST.component, "Select");
   var SYNOLOGY_KEY = "lmetorrentsynologyKey";
 
-  /**
-   * Register all UI templates with Lampa
-   */
   function registerTemplates() {
-    // CSS styles
+
     Lampa.Template.add('lmemStyle', "\n        <style>\n            @charset 'UTF-8';.btnTDdownload{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center}svg.btnTDdownload{width:36px;height:36px;margin-right:5%}.lmetorrent-error_body{-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;text-align:center}.lmetorrent-error_body .lmetorrent-error_result{margin-top:2em}.lmetorrent-head{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-webkit-justify-content:space-between;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;padding:0 2% 0 2%;margin:0 2% 2% 2%}.lmetorrent-header__update{white-space:nowrap}.lmetorrent-header__space{margin-left:auto}.lmetorrent-catalog--list.category-full{margin-left:0;padding:0 2.5%}.lmetorrent-catalog--state{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;min-height:45vh;padding:0 2%}.lmetorrent-state{max-width:46em;width:100%;text-align:center}.lmetorrent-state__title{font-size:1.35em;font-weight:600}.lmetorrent-state__description{margin-top:.8em;opacity:.85;line-height:1.4}.lmetorrent-state__actions{margin-top:1.3em;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;gap:.7em}.lmetorrent-catalog--list.category-full .card.card--category .card__view{margin-bottom:.72em}.lmetorrent_card__completed{position:absolute;right:0;bottom:0;font-size:.8em;-webkit-border-radius:.3em;-moz-border-radius:.3em;padding:.4em .4em;border-radius:.3em;text-align:center;font-weight:bold;background-color:var(--background-color);color:var(--text-color)}.lmetorrent_card__completed.is-low{--background-color:#fcc;--text-color:#900}.lmetorrent_card__completed.is-mid{--background-color:#ffc;--text-color:#990}.lmetorrent_card__completed.is-high{--background-color:#cfc;--text-color:#090}.lmetorrent_card__state{left:0;top:0}.lmetorrent_card__size{left:0;bottom:0}.lmetorrent_card__size,.lmetorrent_card__state{position:absolute;padding:.4em .4em;background:#fff;color:#000;font-size:.8em;-webkit-border-radius:.3em;border-radius:.3em}@media screen and (max-width:900px){.lmetorrent-head{margin:0 2% 3% 2%;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;row-gap:.6em}.lmetorrent-header__space{margin-left:0;width:100%;font-size:.95em;opacity:.85}.lmetorrent-catalog--list.category-full{margin-left:0;padding:0 1%}}@media screen and (max-width:767px){.lmetorrent-head{margin:0 2% 2.4% 2%;-webkit-flex-wrap:nowrap;-ms-flex-wrap:nowrap;flex-wrap:nowrap;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;gap:.8em}.lmetorrent-header__update{font-size:1.12em}.lmetorrent-header__space{margin-left:auto;width:auto;font-size:1.08em;opacity:.98;white-space:nowrap}.lmetorrent-catalog--list.category-full{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;padding:0}.lmetorrent-catalog--list.category-full .card.card--category{width:33.3333% !important;min-width:0;padding-left:.22em;padding-right:.22em}}@media screen and (max-width:560px){.lmetorrent-head{-webkit-box-align:start;-webkit-align-items:flex-start;-ms-flex-align:start;align-items:flex-start}.lmetorrent-catalog--list.category-full{padding:0}.lmetorrent-catalog--list.category-full .card.card--category .card__view{margin-bottom:.5em}.lmetorrent_card__size,.lmetorrent_card__state,.lmetorrent_card__completed{font-size:.68em}}@media screen and (max-width:420px){.lmetorrent-head{-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;row-gap:.55em}.lmetorrent-header__space{width:100%;margin-left:0}}.lmetorrent-item{margin-left:.5em;margin-right:.5em;margin-bottom:1em;width:-webkit-calc(14.2857142857% - 1em);width:calc(14.2857142857% - 1em);-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;border:solid .01em #fff;-webkit-border-radius:.8em;border-radius:.8em}.lmetorrent-item.focus{border:solid .26em #fff}.lmetorrent-item__data{margin-bottom:.4em}.lmetorrent-item__state{top:.5em;left:.5em;padding:.1em .3em;font-weight:bold;-webkit-border-radius:.25em;border-radius:.25em;color:#292d32;background-color:#eee}.lmetorrent-item__badge>svg{width:1em;height:1em;vertical-align:bottom}.lmetorrent-item__name{font-size:1.1em;margin-top:.8em;white-space:nowrap;overflow:hidden;-o-text-overflow:ellipsis;text-overflow:ellipsis}@media screen and (max-width:580px){.lmetorrent-item{width:21%}}@media screen and (max-width:385px){.lmetorrent-item__name{display:none}}.torrent-manager-icon{--icon-status-color:limegreen;color:var(--icon-status-color)}.torrent-manager-sidebar{position:fixed;top:0;right:-350px;width:350px;height:100%;background-color:rgba(0,0,0,0.85);z-index:1000;-webkit-transition:right .3s;-o-transition:right .3s;transition:right .3s;color:white;padding:20px;-webkit-box-sizing:border-box;box-sizing:border-box;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column}.torrent-manager-sidebar.visible{right:0}.torrent-manager-sidebar__header{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-webkit-justify-content:space-between;-ms-flex-pack:justify;justify-content:space-between;margin-bottom:20px;font-weight:bold;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.torrent-manager-sidebar__list{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;gap:10px;overflow-y:auto;-webkit-box-flex:1;-webkit-flex-grow:1;-ms-flex-positive:1;flex-grow:1}.torrent-manager-sidebar__item{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-webkit-justify-content:space-between;-ms-flex-pack:justify;justify-content:space-between;padding:10px;background-color:rgba(255,255,255,0.1);-webkit-border-radius:5px;border-radius:5px;cursor:pointer;gap:10px}.torrent-manager-sidebar__item:hover{background-color:rgba(255,255,255,0.2)}.torrent-manager-sidebar__item-name{white-space:nowrap;overflow:hidden;-o-text-overflow:ellipsis;text-overflow:ellipsis;-webkit-box-flex:1;-webkit-flex-grow:1;-ms-flex-positive:1;flex-grow:1}.torrent-manager-sidebar__item-percent{-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.lmetorrent-section{padding-bottom:1.5em}.lmetorrent-section__icon{margin-right:.4em}.lmetorrent-section__count{margin-left:.5em;opacity:.6;font-size:.85em}.lmetorrent-section .mapping--line .card--category{width:12em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.lmetorrent-section-view{width:100%;min-height:45vh}.lmetorrent-section-view__grid{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;padding:0 2%}.lmetorrent-section-view .card--category{width:14.5%;margin:0 .5% 1em}@media screen and (max-width:767px){.lmetorrent-section-view .card--category{width:30%}}.lmetorrent-section .card-more{-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;width:12.75em;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;height:18em}.lmetorrent-section .card-more .card-more__box{-webkit-transition:border-color .2s,-webkit-transform .3s;transition:border-color .2s,-webkit-transform .3s;-o-transition:transform .3s,border-color .2s;transition:transform .3s,border-color .2s;transition:transform .3s,border-color .2s,-webkit-transform .3s;background:rgba(0,0,0,0.3);-webkit-border-radius:1em;border-radius:1em;-webkit-box-flex:1;-webkit-flex-grow:1;-ms-flex-positive:1;flex-grow:1;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;position:relative}.lmetorrent-section .card-more .card-more__title{position:absolute;top:50%;left:0;right:0;text-align:center;font-size:1.8em;font-weight:300;margin-top:-0.7em}.lmetorrent-section .card-more.focus .card-more__box::after{content:'';position:absolute;top:-0.5em;left:-0.5em;right:-0.5em;bottom:-0.5em;border:.3em solid #fff;-webkit-border-radius:1.4em;border-radius:1.4em;z-index:-1}.lmetorrent-section .card-more--fixed-size{display:block}@media screen and (min-width:64em){body.size--bigger .lmetorrent-section .card-more{font-size:1.14em}}\n        </style>\n    ");
 
-    // Header template
     Lampa.Template.add('lmetorrent_header', "<div class=\"lmetorrent-header__data lmetorrent-header__update simple-button selector\">Update</div>\n          <div class=\"lmetorrent-header__data lmetorrent-header__space\">Free space: {space}</div>\n        ");
 
-    // List item template
     Lampa.Template.add('lmetorrent_item', "<div class=\"card selector lmetorrent-item\">\n            <div class=\"lmetorrent-item__data lmetorrent-item__name\">{name}</div>\n            <div class=\"lmetorrent-item__data lmetorrent-item__state\">{state}</div>\n            <div class=\"lmetorrent-item__data lmetorrent-item__progress\">{size} / {completed}</div>\n        </div>");
 
-    // Card item template
     Lampa.Template.add('lmetorrent_item__card', "<div class=\"card card--category selector layer--visible layer--render\">\n            <div class=\"card__view\">\n                <img src=\"{image}\" data-src=\"{image_src}\" alt=\"{title}\" class=\"card__img\">\n                <div class=\"card__icons\">\n                    <div class=\"card__icons-inner\">\n                    </div>\n                </div>\n                <div class=\"lmetorrent_card__state\">{state}</div>\n                <div class=\"lmetorrent_card__size\">{size}</div>\n                <div class=\"lmetorrent_card__completed\" data-completed=\"{data-completed}\">{completed}</div>\n            </div>\n        </div>");
   }
 
-  /**
-   * Check if a session key date is older than 5 days
-   * 
-   * @param {number} keyDate - Timestamp of the key creation date
-   * @returns {boolean} - True if the key is old or doesn't exist
-   */
   function isKeyDateOld(keyDate) {
     if (!keyDate) {
       return true;
@@ -8358,18 +7845,10 @@
     return keyDate < timestampFiveDaysAgo;
   }
 
-  /**
-   * Create and add menu button for the plugin
-   * 
-   * @returns {JQuery} - The created button element
-   */
   function createMenuButton() {
     return Lampa.Menu.addButton(MANIFEST.icon, MANIFEST.name, createPanelNavigationItem());
   }
 
-  /**
-   * Initialize client authentication based on selected client
-   */
   function initializeClientAuth() {
     var selectedClient = Lampa.Storage.get(SELECT_KEY);
     var clientAuthHandlers = {
@@ -8397,54 +7876,39 @@
     }
   }
 
-  /**
-   * Main plugin initialization function
-   */
   function initializePlugin() {
     try {
-      // Initialize language support
+
       Component$1();
 
-      // Register UI templates
       registerTemplates();
 
-      // Register panel component
       Lampa.Component.add('lmetorrentPanel', Component);
 
-      // Register section view component for "more" navigation
       Lampa.Component.add('lmetorrentSectionView', SectionView);
 
-      // Register plugin in manifest
       Lampa.Manifest.plugins = MANIFEST;
 
-      // Add menu button if not using universal client
       var selectedClient = Lampa.Storage.get(SELECT_KEY);
       if (selectedClient !== 'universalClient') {
         torrentInfo();
         createMenuButton();
       }
 
-      // Add CSS styles
       $('body').append(Lampa.Template.get('lmemStyle', {}, true));
 
-      // Initialize configuration
       Main$1(MANIFEST);
 
-      // Initialize downloader
       Send();
 
-      // Initialize mytorrents integration
       MyTorrents();
 
-      // Initialize client authentication
       initializeClientAuth();
 
-      // Initialize new header feature
       DomInjector$1.inject();
       TorrentStateManager$1.start();
       HomeRow.init();
 
-      // Initialize card integration for torrent status indicators
       try {
         CardIntegration.init();
       } catch (error) {
@@ -8455,9 +7919,6 @@
     }
   }
 
-  /**
-   * Start the plugin when Lampa is ready
-   */
   function startPlugin() {
     window.plugin_lmetorrent_ready = true;
     if (window.appready) {
@@ -8471,7 +7932,6 @@
     }
   }
 
-  // Initialize the plugin if not already initialized
   if (!window.plugin_lmetorrent_ready) {
     startPlugin();
   }
