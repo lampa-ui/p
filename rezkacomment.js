@@ -1,6 +1,4 @@
 (function () {
-  //BDVBuriлk.github.io
-  //2025
   ("use strict");
 
   var year;
@@ -21,10 +19,6 @@
     return s;
   }
 
-  // Старые ТВ-браузеры (Chromium 38 и т.п.) не знают fetch() вообще — "fetch is
-  // not defined". Единственное, что там есть — XMLHttpRequest. Эта обёртка даёт
-  // тот же интерфейс, что и fetch, чтобы не переписывать всю логику .then() ниже:
-  // возвращает Promise с объектом { ok, status, text() }.
   function fetchCompat(url, options) {
     options = options || {};
     return new Promise(function (resolve, reject) {
@@ -70,7 +64,6 @@
     return { host: host, cookie: cookie, proxy: proxy };
   }
 
-  // Функция для поиска на сайте hdrezka
   function searchRezka(name, ye) {
     var settings = getSettings();
     var host = settings.host;
@@ -120,12 +113,10 @@
     });
   }
 
-  // Функция для получения английского названия фильма или сериала
   function getEnTitle(id, type) {
     var tmdbType = type === 'movie' ? 'movie' : 'tv';
     var tmdbCacheKey = tmdbType + '_' + id;
 
-    // Спочатку перевіряємо спільний кеш (заповнює title.js)
     window.__tmdbTranslationsCache = window.__tmdbTranslationsCache || {};
     window.__tmdbFallbackTitleCache = window.__tmdbFallbackTitleCache || {};
     var cachedTr = window.__tmdbTranslationsCache[tmdbCacheKey];
@@ -148,11 +139,6 @@
         var tr = (data && data.translations && data.translations.translations) || [];
         window.__tmdbTranslationsCache[tmdbCacheKey] = tr;
 
-        // Если оригинальный язык фильма/сериала — английский, его собственное
-        // название (title/original_title) УЖЕ является английским. Сохраняем
-        // это как запасной вариант: TMDB часто числит перевод en-US как
-        // существующий, но с пустыми title/name внутри — и без этого фолбэка
-        // плагин ошибочно решает, что английского названия нет вообще.
         if (data && data.original_language === 'en') {
           fallbackTitle = (data && data.title) || (data && data.name) || (data && data.original_title) || (data && data.original_name) || '';
         }
@@ -164,9 +150,6 @@
     }
 
     return trPromise.then(function (tr) {
-      // Перебираем ВСЕ переводы с iso_639_1 === 'en' (их может быть несколько:
-      // en-US, en-GB, en-CA...), а не только первый попавшийся — берём первый
-      // с непустым title/name.
       var enTitle = '';
       var enList = tr.filter(function (t) {
         return t.iso_639_1 === 'en';
@@ -196,12 +179,10 @@
     });
   }
 
-  // Функция для очистки заголовка от лишних символов
   function cleanTitle(str) {
     return str.replace(/[\s.,:;’'`!?]+/g, " ").trim();
   }
 
-  // Функция для нормализации заголовка
   function normalizeTitle(str) {
     return cleanTitle(
       str
@@ -211,7 +192,6 @@
     );
   }
 
-  // Создаёт один комментарий
   function buildCommentNode(item) {
     function q(s) {
       return item.querySelector(s);
@@ -250,7 +230,6 @@
     return wrapper;
   }
 
-  // Рекурсивно строит дерево
   function buildTree(root) {
     var fragment = document.createDocumentFragment();
 
@@ -272,7 +251,6 @@
     return fragment;
   }
 
-  // === Основная обработка комментариев Rezka с storage на сутки ===
   function comment_rezka(id, pageUrl) {
     var settings = getSettings();
     var host = settings.host;
@@ -299,7 +277,6 @@
       );
       modal.find(".comment").append(treeContent);
 
-      // Стили модалки (если ещё не добавлены)
       if (!document.getElementById("rezka-comment-style")) {
         var styleEl = document.createElement("style");
         styleEl.id = "rezka-comment-style";
@@ -362,7 +339,6 @@
       }
       return r.text();
     }).then(function (fc) {
-      // Check if the response is actually HTML challenge instead of JSON
       if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
         Lampa.Noty.show('Защита от ботов на Rezka. Настройте Cookie в настройках плагина.');
         Lampa.Loading.stop();
@@ -397,17 +373,14 @@
     });
   }
 
-  // Функция для начала работы плагина
   function startPlugin() {
     window.comment_plugin = true;
 
-    // Вспомогательная функция для генерации случайного кода
     function generateAuthCode() {
         return Math.floor(1000 + Math.random() * 9000).toString();
     }
 
     try {
-      // Регистрация настроек
       Lampa.SettingsApi.addComponent({
         component: 'rezka_comment',
         name: 'Rezka Comments',
@@ -467,14 +440,11 @@
         }
       });
 
-      // Общий поллинг /check?code=... — используется и QR-флоу (телефон), и
-      // флоу "прямо на ТВ" (iframe в Lampa). Раньше эта логика была продублирована
-      // бы в двух местах; вынесена один раз, чтобы не разъезжались таймауты/тексты.
       function pollAuthCode(proxyUrl, code, statusSelector, waitingText, onSuccess, onTimeout) {
           var attempts = 0;
           window.rezkaAuthInterval = setInterval(function() {
               attempts++;
-              if(attempts > 90) { // 3 минуты тайм-аут (челлендж может решаться дольше на слабых устройствах)
+              if(attempts > 90) {
                   clearInterval(window.rezkaAuthInterval);
                   $(statusSelector).text('Время ожидания истекло. Попробуйте снова.').css('color', '#ff5722');
                   if (onTimeout) onTimeout();
@@ -496,7 +466,6 @@
                           var tail = (d.cookie || '').slice(-16);
                           $(statusSelector).html('<span style="color: #4CAF50;">Успешно! Cookie сохранены (…' + tail + ').</span>');
 
-                          // Best-effort обновление видимого поля в настройках, если оно сейчас на экране
                           try {
                               $('.settings-param[data-name="rezka_comment_cookie"] .settings-param__value').text(d.cookie);
                           } catch(e) {}
@@ -509,13 +478,6 @@
           }, 2000);
       }
 
-      // Единая функция закрытия модалки авторизации (общая для QR и iframe-флоу).
-      // ВАЖНО: раньше при успехе модалка закрывалась напрямую через
-      // Lampa.Modal.close() в setTimeout, в обход стандартного onBack — а именно
-      // onBack (вызываемый Lampa при нажатии "назад") возвращает фокус
-      // Controller'а на экран настроек. Из-за прямого close() Controller
-      // оставался "залипшим" на уже удалённой модалке, и физическая кнопка
-      // "назад" переставала работать на экране настроек.
       function closeAuthModal(modalClass) {
           clearInterval(window.rezkaAuthInterval);
           Lampa.Modal.close();
@@ -536,10 +498,6 @@
           if(!endsWithSlash(proxyUrl)) proxyUrl += '/';
 
           var host = (Lampa.Storage.get('rezka_comment_host', 'https://rezka.ag') || 'https://rezka.ag').trim();
-          // Домен без протокола и хвостовых слэшей — чтобы в итоговой ссылке
-          // не было %3A%2F%2F (URL внутри query-параметра пришлось бы
-          // percent-кодировать). Путь /auth/<code>/<domain> для этого не
-          // требует кодирования вообще, если сам домен без спецсимволов.
           var hostBare = host.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
 
           var code = generateAuthCode();
@@ -548,7 +506,6 @@
           return { proxyUrl: proxyUrl, code: code, authUrl: authUrl };
       }
 
-      // Кнопка для запуска QR-авторизации
       Lampa.SettingsApi.addParam({
         component: 'rezka_comment',
         param: {
@@ -585,13 +542,6 @@
                 onBack: closeThisModal
             });
 
-            // Раньше QR рисовался через библиотеку qrcodejs, загружаемую с cdnjs.
-            // На ТВ-вебвью (особенно старый Chromium) этот запрос к стороннему CDN
-            // часто либо блокируется, либо зависает без onload/onerror — и тогда
-            // контейнер под QR остаётся пустым навсегда, без какой-либо ошибки.
-            // Поэтому вместо загрузки JS-библиотеки просто показываем готовую
-            // картинку с QR-кодом с публичного API — никакой внешней библиотеки,
-            // никакой гонки по времени загрузки.
             var qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(auth.authUrl);
             $('#rezka_qr_container').html(
                 '<img src="' + qrImgUrl + '" width="250" height="250" alt="QR" onerror="this.parentElement.innerHTML=' +
@@ -603,13 +553,6 @@
         }
       });
 
-      // Кнопка для прохождения проверки прямо на ТВ, без телефона — открывает
-      // ту же самую /auth-страницу в iframe внутри модалки Lampa. РИСК: сама
-      // проверка (Anubis) — чужой JS, который мы не контролируем; если он
-      // использует WebAssembly или синтаксис новее того, что понимает движок
-      // ТВ, страница внутри iframe может не отработать. Если эта кнопка не
-      // сработает — используйте QR-код выше, там код выполняется в браузере
-      // телефона, а не на ТВ.
       Lampa.SettingsApi.addParam({
         component: 'rezka_comment',
         param: {
