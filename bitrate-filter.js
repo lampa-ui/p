@@ -31,12 +31,6 @@
         defaultMode: 'hide'
     };
 
-    var ICON = '<svg width="37" height="38" viewBox="0 0 37 38" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-        '<path d="M3 30C3 17.0163 13.0163 7 26 7" stroke="white" stroke-width="3" stroke-linecap="round"/>' +
-        '<circle cx="18.5" cy="27" r="3" fill="white"/>' +
-        '<line x1="18.5" y1="27" x2="26" y2="16" stroke="white" stroke-width="3" stroke-linecap="round"/>' +
-        '</svg>';
-
     function nowMs() {
         if (window.performance && typeof performance.now === 'function') return performance.now();
         return Date.now();
@@ -1235,49 +1229,9 @@
         }
     }
 
-    function registerSettings() {
-        Lampa.SettingsApi.addComponent({
-            component: 'bitrate_filter',
-            icon: ICON,
-            name: 'Фильтр битрейта'
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'bitrate_filter',
-            param: { name: 'bitrate_filter_enabled', type: 'trigger', default: CONFIG.defaultEnabled },
-            field: { name: 'Включить фильтр', description: 'Скрывать/затемнять раздачи, битрейт которых выше скорости интернета' },
-            onChange: function (value) { State.enabled = value === true || value === 'true'; }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'bitrate_filter',
-            param: { name: 'bitrate_filter_mode', type: 'select', default: CONFIG.defaultMode, values: { hide: 'Скрывать', grey: 'Затемнять' } },
-            field: { name: 'Режим', description: 'Что делать с раздачами не по скорости' },
-            onChange: function (value) { State.mode = value; }
-        });
-
-        var marginValues = {};
-        CONFIG.marginOptions.forEach(function (m) { marginValues[String(m)] = marginLabel(m); });
-
-        Lampa.SettingsApi.addParam({
-            component: 'bitrate_filter',
-            param: { name: 'bitrate_filter_margin', type: 'select', default: String(CONFIG.defaultMargin), values: marginValues },
-            field: { name: 'Запас по скорости', description: 'Порог = скорость × запас' },
-            onChange: function (value) { State.margin = parseFloat(value); }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'bitrate_filter',
-            param: { name: 'bitrate_filter_speed_info', type: 'static' },
-            field: { name: 'Текущая скорость', description: speedLabel() + ' — обновляется через кнопку "Скорость" на странице торрентов' },
-            onRender: function (item) { item.find('.settings-param__descr').text(speedLabel()); }
-        });
-    }
-
     function init() {
         loadState();
         injectStyles();
-        registerSettings();
 
         State.speedMbps = getCachedSpeed();
         if (!State.speedMbps) runSpeedTest(function () { reprocessAll(); });
