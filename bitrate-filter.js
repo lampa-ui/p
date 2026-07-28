@@ -28,8 +28,16 @@
         marginOptions: [1, 0.9, 0.85, 0.7, 0.5],
         defaultMargin: 0.85,
         defaultEnabled: true,
-        defaultMode: 'hide'
+        defaultMode: 'hide',
+        providerOptions: ['auto', 'ndt7', 'cloudflare'],
+        defaultProvider: 'auto'
     };
+
+    var ICON = '<svg width="37" height="38" viewBox="0 0 37 38" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<path d="M3 30C3 17.0163 13.0163 7 26 7" stroke="white" stroke-width="3" stroke-linecap="round"/>' +
+        '<circle cx="18.5" cy="27" r="3" fill="white"/>' +
+        '<line x1="18.5" y1="27" x2="26" y2="16" stroke="white" stroke-width="3" stroke-linecap="round"/>' +
+        '</svg>';
 
     function nowMs() {
         if (window.performance && typeof performance.now === 'function') return performance.now();
@@ -57,11 +65,12 @@
         var style = document.createElement('style');
         style.id = 'bitrate-filter-styles';
         style.textContent =
-            '.selectbox-item.has-ring{padding-right:6.5em}' +
+            '.selectbox-item.has-ring{padding-right:6.5em;padding-top:0.9em;padding-bottom:0.9em;min-height:6.5em;align-items:flex-start}' +
             '.selectbox-item.has-ring::after{display:none !important;content:none !important}' +
             '.selectbox-item.has-ring .selectbox-item__checkbox{display:none !important}' +
             '.selectbox-item.has-ring .selectbox-item__checkbox::after{display:none !important;content:none !important}' +
-            '.bf-modern-ring-wrap{position:absolute;top:50%;right:1.2em;transform:translateY(-50%);width:4.2em;height:4.2em;pointer-events:none}' +
+            '.selectbox-item.has-ring .selectbox-item__subtitle{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.5em;font-size:0.78em;opacity:0.75;margin-top:0.3em;display:block}' +
+            '.bf-modern-ring-wrap{position:absolute;top:1.1em;right:1.2em;transform:none;width:4.2em;height:4.2em;pointer-events:none}' +
             '.bf-modern-ring{width:100%;height:100%;overflow:visible}' +
             '.bf-modern-ring .bf-ring-progress{transition:stroke-dashoffset 0.4s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s ease}' +
             '.bf-modern-ring.testing .bf-ring-progress{stroke:url(#bfRingGradTesting); animation:bfRingPulse 1s ease-in-out infinite}' +
@@ -134,7 +143,9 @@
         enabled: CONFIG.defaultEnabled,
         margin: CONFIG.defaultMargin,
         mode: CONFIG.defaultMode,
-        speedMbps: null
+        provider: CONFIG.defaultProvider,
+        speedMbps: null,
+        lastTest: null
     };
 
     function loadState() {
@@ -146,6 +157,9 @@
 
         var mode = Lampa.Storage.get('bitrate_filter_mode', CONFIG.defaultMode);
         if (mode) State.mode = mode;
+
+        var provider = Lampa.Storage.get('bitrate_filter_provider', CONFIG.defaultProvider);
+        if (provider) State.provider = provider;
     }
 
     function getCachedSpeed() {
@@ -182,11 +196,11 @@
             cb([]);
         }, CONFIG.speedTestNdt7DiscoveryTimeoutMs);
 
-        function finishDiscovery(urls) {
+        function finishDiscovery(urls, servers) {
             if (done) return;
             done = true;
             clearTimeout(guardTimer);
-            cb(urls);
+            cb(urls, servers || []);
         }
 
         try {
@@ -196,25 +210,31 @@
 
             xhr.onload = function () {
                 var urls = [];
+                var servers = [];
                 try {
                     if (xhr.status >= 200 && xhr.status < 300) {
                         var data = JSON.parse(xhr.responseText);
                         var results = (data && data.results) || [];
                         for (var i = 0; i < results.length && urls.length < count; i++) {
-                            var u = results[i] && results[i].urls && results[i].urls['wss:///ndt/v7/download'];
-                            if (u) urls.push(u);
+                            var r = results[i];
+                            var u = r && r.urls && r.urls['wss:///ndt/v7/download'];
+                            if (u) {
+                                urls.push(u);
+                                var loc = r.location ? [r.location.city, r.location.country].filter(Boolean).join(', ') : '';
+                                servers.push(loc || r.machine || '');
+                            }
                         }
                     }
                 } catch (e) {
                     log('ndt7: ошибка парсинга discovery', e && e.message);
                 }
-                finishDiscovery(urls);
+                finishDiscovery(urls, servers);
             };
-            xhr.onerror = function () { finishDiscovery([]); };
-            xhr.ontimeout = function () { finishDiscovery([]); };
+            xhr.onerror = function () { finishDiscovery([], []); };
+            xhr.ontimeout = function () { finishDiscovery([], []); };
             xhr.send(null);
         } catch (e) {
-            finishDiscovery([]);
+            finishDiscovery([], []);
         }
     }
 
@@ -246,6 +266,7 @@
         var sockets = [];
         var closedCount = 0;
         var expectedCount = 0;
+        var usedServers = [];
 
         function computeWindowedMbps(now) {
             if (samples.length < 2) return null;
@@ -311,6 +332,17 @@
 
             var result = robustPeakMbps(pool) || emaMbps || computeWindowedMbps(nowMs());
 
+            State.lastTest = {
+                method: 'ndt7',
+                server: usedServers[0] || null,
+                serverList: usedServers.filter(Boolean),
+                connections: expectedCount,
+                durationMs: Math.round(nowMs() - testStart),
+                samples: readings.length,
+                totalBytes: totalBytes,
+                finishReason: reason || ''
+            };
+
             log('ndt7: финиш', result, reason || '', readings.length, pool.length);
             if (result && result > 0) saveSpeed(result);
             if (onDone) onDone(result || null);
@@ -329,7 +361,7 @@
 
             ws.onmessage = function (e) {
                 if (stopRequested) return;
-                if (typeof e.data === 'string') return; // JSON measurement message, свой tick() используем вместо него
+                if (typeof e.data === 'string') return;
                 var len = (e.data && (e.data.byteLength || (e.data.size))) || 0;
                 if (len) recordProgress(len);
             };
@@ -344,7 +376,7 @@
             if (closedCount >= expectedCount) finish('sockets closed');
         }
 
-        ndt7Discover(CONN_COUNT, function (urls) {
+        ndt7Discover(CONN_COUNT, function (urls, servers) {
             if (stopRequested) return;
             if (!urls.length) {
                 log('ndt7: discovery не дал серверов, откат');
@@ -352,6 +384,7 @@
                 return;
             }
 
+            usedServers = servers || [];
             expectedCount = urls.length;
             testStart = nowMs();
             capTimer = setTimeout(function () { finish('timeout cap'); }, MAX_MS);
@@ -362,9 +395,69 @@
     }
 
     function runSpeedTest(onDone, onProgress) {
+        var provider = State.provider || CONFIG.defaultProvider;
+
+        if (provider === 'cloudflare') {
+            runSpeedTestXhr(onDone, onProgress);
+            return;
+        }
+
+        if (provider === 'ndt7') {
+            runSpeedTestNdt7(onDone, onProgress, function () {
+                runSpeedTestXhr(onDone, onProgress);
+            });
+            return;
+        }
+
         runSpeedTestNdt7(onDone, onProgress, function () {
             runSpeedTestXhr(onDone, onProgress);
         });
+    }
+
+    function providerLabel(p) {
+        if (p === 'ndt7') return 'M-Lab (NDT7)';
+        if (p === 'cloudflare') return 'Cloudflare';
+        return 'Авто (NDT7 → Cloudflare)';
+    }
+
+    var CF_TRACE_URL = 'https://speed.cloudflare.com/cdn-cgi/trace';
+
+    function fetchCloudflareColo(cb) {
+        var done = false;
+        var xhr = new XMLHttpRequest();
+        var guard = setTimeout(function () {
+            if (done) return;
+            done = true;
+            cb(null);
+        }, 3000);
+
+        try {
+            xhr.open('GET', CF_TRACE_URL + '?cachebust=' + Date.now(), true);
+            xhr.onload = function () {
+                if (done) return;
+                done = true;
+                clearTimeout(guard);
+                var colo = null;
+                try {
+                    var m = (xhr.responseText || '').match(/colo=([A-Z0-9]+)/);
+                    if (m) colo = m[1];
+                } catch (e) {}
+                cb(colo);
+            };
+            xhr.onerror = function () {
+                if (done) return;
+                done = true;
+                clearTimeout(guard);
+                cb(null);
+            };
+            xhr.send(null);
+        } catch (e) {
+            if (!done) {
+                done = true;
+                clearTimeout(guard);
+                cb(null);
+            }
+        }
     }
 
     function runSpeedTestXhr(onDone, onProgress) {
@@ -390,8 +483,13 @@
         var slotFailCount = {};
         var deadSlots = {};
         var deadSlotCount = 0;
+        var detectedColo = null;
 
         log('тест: старт', CONFIG.speedTestUrl, CONN_COUNT, CONFIG.speedTestChunkBytes);
+
+        fetchCloudflareColo(function (colo) {
+            if (colo && !detectedColo) detectedColo = colo;
+        });
 
         function computeWindowedMbps(now) {
             if (samples.length < 2) return null;
@@ -452,6 +550,12 @@
                     recordProgress(xhr.response.byteLength - prevLoaded);
                     prevLoaded = xhr.response.byteLength;
                 }
+                if (!detectedColo) {
+                    try {
+                        var ray = xhr.getResponseHeader('cf-ray');
+                        if (ray && ray.indexOf('-') !== -1) detectedColo = ray.split('-').pop();
+                    } catch (e) {}
+                }
                 delete activeXhrs[slot];
                 slotFailCount[slot] = 0;
                 if (!stopRequested) startSlot(slot);
@@ -508,6 +612,17 @@
             var pool = stableReadings.length >= 4 ? stableReadings : readings.map(function (r) { return r.mbps; });
 
             var result = robustPeakMbps(pool) || emaMbps || computeWindowedMbps(nowMs());
+
+            State.lastTest = {
+                method: 'cloudflare',
+                server: detectedColo,
+                serverList: detectedColo ? [detectedColo] : [],
+                connections: CONN_COUNT,
+                durationMs: Math.round(nowMs() - testStart),
+                samples: readings.length,
+                totalBytes: totalBytes,
+                finishReason: reason || ''
+            };
 
             log('тест: финиш', result, reason || '', readings.length, pool.length);
             if (result && result > 0) saveSpeed(result);
@@ -1056,6 +1171,101 @@
         return State.speedMbps ? State.speedMbps.toFixed(1) + ' Мбит/с' : 'не измерено';
     }
 
+    function testMethodName(method) {
+        if (method === 'ndt7') return 'M-Lab NDT7';
+        if (method === 'cloudflare') return 'Cloudflare';
+        return method || '?';
+    }
+
+    var CF_COLO_NAMES = {
+        KBP: 'Киев', IEV: 'Киев',
+        HRK: 'Харьков',
+        LWO: 'Львов',
+        ODS: 'Одесса',
+        MSQ: 'Минск',
+        DME: 'Москва', SVO: 'Москва', VKO: 'Москва',
+        LED: 'Санкт-Петербург',
+        KZN: 'Казань',
+        SVX: 'Екатеринбург',
+        AER: 'Сочи',
+        ALA: 'Алматы',
+        NQZ: 'Астана',
+        TBS: 'Тбилиси',
+        EVN: 'Ереван',
+        BAK: 'Баку',
+        KIV: 'Кишинёв',
+        WAW: 'Варшава',
+        KRK: 'Краков',
+        PRG: 'Прага',
+        BTS: 'Братислава',
+        BUD: 'Будапешт',
+        VIE: 'Вена',
+        SOF: 'София',
+        OTP: 'Бухарест',
+        FRA: 'Франкфурт',
+        BER: 'Берлин',
+        HAM: 'Гамбург',
+        MUC: 'Мюнхен',
+        AMS: 'Амстердам',
+        BRU: 'Брюссель',
+        CDG: 'Париж',
+        LHR: 'Лондон',
+        MAN: 'Манчестер',
+        DUB: 'Дублин',
+        MAD: 'Мадрид',
+        BCN: 'Барселона',
+        MXP: 'Милан',
+        FCO: 'Рим',
+        ARN: 'Стокгольм',
+        CPH: 'Копенгаген',
+        OSL: 'Осло',
+        HEL: 'Хельсинки',
+        RIX: 'Рига',
+        TLL: 'Таллин',
+        VNO: 'Вильнюс',
+        IST: 'Стамбул'
+    };
+
+    function colocationLabel(code) {
+        if (!code) return '';
+        var name = CF_COLO_NAMES[code];
+        return name ? (name + ' (' + code + ')') : code;
+    }
+
+    function testInfoLabel() {
+        var t = State.lastTest;
+        if (!t) return '';
+        var parts = [testMethodName(t.method)];
+        if (t.server) parts.push(t.method === 'cloudflare' ? colocationLabel(t.server) : t.server);
+        return parts.join(' · ');
+    }
+
+    function testInfoDetailedLines() {
+        var t = State.lastTest;
+        if (!t) return ['Тест ещё не запускался'];
+
+        var serverDisplay = t.server ? (t.method === 'cloudflare' ? colocationLabel(t.server) : t.server) : 'неизвестно';
+
+        var lines = [];
+        lines.push('Способ: ' + testMethodName(t.method));
+        lines.push('Сервер: ' + serverDisplay);
+        if (t.serverList && t.serverList.length > 1) {
+            lines.push('Все узлы: ' + t.serverList.join(' / '));
+        }
+        lines.push('Потоков: ' + t.connections);
+        lines.push('Длительность: ' + (t.durationMs / 1000).toFixed(1) + ' с');
+        lines.push('Замеров: ' + t.samples);
+        lines.push('Скачано: ' + (t.totalBytes / 1e6).toFixed(1) + ' МБ');
+        if (t.finishReason) lines.push('Причина завершения: ' + t.finishReason);
+        lines.push('Результат: ' + speedLabel());
+
+        return lines;
+    }
+
+    function testInfoLabelDetailed() {
+        return testInfoDetailedLines().join('\n');
+    }
+
     function marginLabel(m) { return Math.round(m * 100) + '%'; }
     function modeLabel(m) { return m === 'hide' ? 'Скрывать' : 'Затемнять'; }
 
@@ -1078,14 +1288,22 @@
     function setMenuItemProgress(mbps, done) {
         var item = Lampa.Select.render().find('.selectbox-item').eq(0);
         var sub = item.find('.selectbox-item__subtitle');
-        if (sub.length) sub.text(done ? 'Готово: ' + speedLabel() : (mbps ? mbps.toFixed(1) + ' Мбит/с…' : 'измеряю…'));
+        if (sub.length) {
+            if (done) {
+                var lines = testInfoDetailedLines();
+                sub.html(lines.join('<br>'));
+            } else {
+                sub.text(mbps ? mbps.toFixed(1) + ' Мбит/с…' : 'измеряю…');
+            }
+        }
 
         updateModernRing(item.find('.bf-modern-ring-wrap'), mbps || (done ? State.speedMbps : null), !done);
     }
 
     function openSpeedMenu(btn) {
         var items = [
-            { title: 'Обновить скорость интернета', subtitle: 'нажмите, чтобы запустить', action: 'refresh' },
+            { title: 'Обновить скорость интернета', subtitle: State.lastTest ? testInfoLabel() : 'нажмите, чтобы запустить', action: 'refresh' },
+            { title: 'Провайдер теста', subtitle: providerLabel(State.provider), action: 'provider' },
             { title: 'Фильтр по битрейту', subtitle: State.enabled ? 'Включен' : 'Выключен', action: 'toggle' },
             { title: 'Режим', subtitle: modeLabel(State.mode), action: 'mode' },
             { title: 'Запас по скорости', subtitle: marginLabel(State.margin), action: 'margin' }
@@ -1125,6 +1343,7 @@
                 }
                 else if (a.action === 'mode') openModeMenu(btn);
                 else if (a.action === 'margin') openMarginMenu(btn);
+                else if (a.action === 'provider') openProviderMenu(btn);
             }
         });
 
@@ -1133,6 +1352,8 @@
             firstItem.addClass('has-ring nomark').append(buildModernRingSvg());
             updateModernRing(firstItem.find('.bf-modern-ring-wrap'), State.speedMbps, false);
         }
+
+        if (State.lastTest) setMenuItemProgress(null, true);
     }
 
     function openModeMenu(btn) {
@@ -1148,6 +1369,23 @@
                 State.mode = a.value;
                 Lampa.Storage.set('bitrate_filter_mode', a.value);
                 reprocessAll();
+                openSpeedMenu(btn);
+            }
+        });
+    }
+
+    function openProviderMenu(btn) {
+        var items = CONFIG.providerOptions.map(function (p) {
+            return { title: providerLabel(p), value: p, checked: p === State.provider };
+        });
+
+        Lampa.Select.show({
+            title: 'Провайдер теста скорости',
+            items: items,
+            onBack: function () { openSpeedMenu(btn); },
+            onSelect: function (a) {
+                State.provider = a.value;
+                Lampa.Storage.set('bitrate_filter_provider', a.value);
                 openSpeedMenu(btn);
             }
         });
