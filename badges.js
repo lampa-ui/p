@@ -141,14 +141,6 @@
             }
 
             var isJapanese = !!(data && (data.original_language === 'ja' || (data.origin_country && data.origin_country.indexOf('JP') !== -1)));
-            if (!isJapanese && data) {
-                var jpName = ((data.original_name || data.original_title || data.name || data.title || '') + '');
-                if (Lampa.Utils && typeof Lampa.Utils.containsJapanese === 'function') {
-                    isJapanese = Lampa.Utils.containsJapanese(jpName);
-                } else {
-                    isJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(jpName);
-                }
-            }
 
             var isAnime = hasAnimeKeyword || (isAnim && isJapanese);
 
