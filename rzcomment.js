@@ -211,6 +211,24 @@
   }
   // --- конец дублированной логики ---
 
+  // Явные текстовые маркеры блокировки ботозащитой (Anubis и т.п.).
+  // Безопасно применять к любому ответу, т.к. не даёт ложных срабатываний.
+  function hasExplicitBotMarkers(text) {
+    return text.indexOf("Проверяем, что вы не бот") !== -1 || text.indexOf("Anubis") !== -1;
+  }
+
+  // Расширенная эвристика для HTML-ответов (поиск, либо ответ, который не
+  // удалось распарсить как JSON): если явных маркеров нет, но куки не
+  // передавались вообще и в ответе нет ожидаемой разметки страницы (b-content),
+  // тоже считаем это блокировкой, а не легитимным "не найдено"/пустым ответом.
+  // Для уже успешно распарсенного JSON эту версию не используем — она даст
+  // ложные срабатывания, т.к. в JSON-ответе никогда не будет "b-content".
+  function looksLikeBotBlockHtml(text, hasCookie) {
+    if (hasExplicitBotMarkers(text)) return true;
+    if (!hasCookie && text.indexOf("b-content") === -1) return true;
+    return false;
+  }
+
   function getSettings() {
     var host = (Lampa.Storage.get('rezka_comment_host', 'https://rezka.ag') || 'https://rezka.ag').trim().replace(/\/+$/, '');
     var cookie = (Lampa.Storage.get('rezka_comment_cookie', '') || '').trim();
@@ -250,7 +268,7 @@
       if (!item) {
         console.warn('[RezkaComment] show not found on Rezka:', name, ye);
         Lampa.Loading.stop();
-        if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
+        if (looksLikeBotBlockHtml(fc, !!cookie)) {
           showCookieExpiredChoice(function () {
             Lampa.Loading.start();
             searchRezka(name, ye);
@@ -499,7 +517,7 @@
       }
       return r.text();
     }).then(function (fc) {
-      if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
+      if (hasExplicitBotMarkers(fc)) {
         Lampa.Loading.stop();
         showCookieExpiredChoice(function () {
           Lampa.Loading.start();
@@ -508,7 +526,24 @@
         return;
       }
 
-      var json = JSON.parse(fc);
+      var json;
+      try {
+        json = JSON.parse(fc);
+      } catch (parseErr) {
+        // Ответ не похож на JSON комментариев — вероятно, это HTML-страница
+        // ботозащиты без явных текстовых маркеров. Применяем ту же
+        // эвристику, что и в поиске (в т.ч. проверку на отсутствие куки).
+        if (looksLikeBotBlockHtml(fc, !!cookie)) {
+          Lampa.Loading.stop();
+          showCookieExpiredChoice(function () {
+            Lampa.Loading.start();
+            comment_rezka(id, pageUrl);
+          });
+          return;
+        }
+        throw new Error('Не удалось разобрать ответ сервера комментариев');
+      }
+
       if (!json || !json.comments) {
         throw new Error('Пустой ответ от сервера комментариев');
       }
