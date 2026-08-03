@@ -87,24 +87,54 @@
         try { return Lampa.Storage.get('jellyfin_head_icon', true) !== false; } catch (e) { return true; }
     }
 
+    function jfNewItemsNotyEnabled() {
+        try { return Lampa.Storage.get('jellyfin_new_items_noty', true) !== false; } catch (e) { return true; }
+    }
+
     function jfSyncHeadIcon() {
         if (!_jfHeadIcon || !_jfHeadIcon.length) return;
+        try {
+            var el = _jfHeadIcon[0];
+            if (el && document && document.documentElement && !document.documentElement.contains(el)) {
+                _jfHeadIcon = null;
+                return;
+            }
+        } catch (e0) {}
         _jfHeadIcon.toggleClass('hide', !jfHeadIconEnabled());
     }
 
     function jfInjectHeadIcon() {
         try {
             if (!Lampa.Head || typeof Lampa.Head.addIcon !== 'function') return;
-            if (_jfHeadIcon && _jfHeadIcon.length) { jfSyncHeadIcon(); return; }
+            if (_jfHeadIcon && _jfHeadIcon.length) {
+                try {
+                    var el0 = _jfHeadIcon[0];
+                    if (el0 && document && document.documentElement && !document.documentElement.contains(el0)) _jfHeadIcon = null;
+                } catch (e00) { _jfHeadIcon = null; }
+            }
+
+            if (!_jfHeadIcon || !_jfHeadIcon.length) {
+                try {
+                    var exist = document ? document.querySelector('.head .jf-head-icon') : null;
+                    if (exist) _jfHeadIcon = $(exist);
+                } catch (e01) {}
+            }
+
+            if (_jfHeadIcon && _jfHeadIcon.length) {
+                try { _jfHeadIcon.off('hover:enter').on('hover:enter', jfOpenMain); } catch (e02) {}
+                jfSyncHeadIcon();
+                return;
+            }
             var $icon = Lampa.Head.addIcon(getIcon());
             $icon.addClass('jf-head-icon selector');
-            $icon.on('hover:enter', jfOpenMain);
+            $icon.off('hover:enter').on('hover:enter', jfOpenMain);
             _jfHeadIcon = $icon;
             jfSyncHeadIcon();
         } catch (e0) {}
     }
 
     function jfRefreshHeadIconStyle() {
+        try { jfInjectHeadIcon(); } catch (e00) {}
         try { if (_jfHeadIcon && _jfHeadIcon.length) _jfHeadIcon.html(getIcon()); } catch (e0) {}
     }
 
@@ -646,7 +676,7 @@
                     }
                     try { jfUpdateIndexStatusUI(); } catch (e2) {}
 
-                    if (ok && newFound) {
+                    if (ok && newFound && jfNewItemsNotyEnabled()) {
                         try {
                             var parts = [];
                             if (newByType.movie) parts.push('фильмов ' + newByType.movie);
@@ -1791,13 +1821,24 @@
                     return row;
                 };
 
-                var listEl = $('<div class="menu-edit-list"></div>');
+                var listEl = $('<div class="menu-edit-list jf-lines-edit-list"></div>');
                 keys.forEach(function (k) { listEl.append(buildRow(k)); });
+
+                try {
+                    if (!document.getElementById('jf-lines-edit-style')) {
+                        $('body').append(
+                            '<style id="jf-lines-edit-style">' +
+                            '.jf-lines-edit-list{width:100%}' +
+                            '.jf-lines-edit-list .menu-edit-list__title{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;line-height:1.25}' +
+                            '</style>'
+                        );
+                    }
+                } catch (eCss0) {}
 
                 modal.open({
                     title: 'Редактировать',
                     html: listEl,
-                    size: 'small',
+                    size: 'medium',
                     scroll_to_center: true,
                     onBack: function () {
                         var outOrder = [];
@@ -1811,6 +1852,11 @@
                         restore();
                     }
                 });
+
+                try {
+                    var $modalBlock = listEl.closest('.modal__block');
+                    if ($modalBlock.length) $modalBlock.css({ width: '44em', 'max-width': '92vw' });
+                } catch (eWide0) {}
             });
         },
 
@@ -1983,9 +2029,9 @@
                     jellyfin_boxset_id: String(it.Id),
                     source: 'jellyfin',
                     title: it.Name || '',
-                    name: it.Name || '',
                     img: this.buildImageUrl(it.Id, 'primary') || '',
-                    child_count: childCount
+                    child_count: childCount,
+                    _collection: true
                 };
             } catch (e0) {
                 return null;
@@ -2032,7 +2078,7 @@
 
                     if (kind === 'boxset') {
                         query.push('Recursive=false');
-                        query.push('Fields=RecursiveItemCount');
+                        query.push('Fields=ChildCount,RecursiveItemCount,ItemCount');
                     } else {
                         query.push('Recursive=false');
                         query.push('Fields=ChildCount,ProviderIds,PremiereDate,ProductionYear,CommunityRating,Type,OriginalTitle');
@@ -2391,7 +2437,7 @@
                             if (line.results[bi] && line.results[bi].jellyfin_boxset_id) { hasBoxsets = true; break; }
                         }
                         if (hasBoxsets) {
-                            line.cardClass = function (item) { return new JellyfinFolderCard(item, 'media'); };
+                            line.cardClass = function (item) { return new JellyfinFolderCard(item, 'boxset'); };
                         }
                         pushLine(line);
                         oneDone();
@@ -2576,7 +2622,7 @@
                                     title: 'Jellyfin • Франшизы',
                                     results: playlists,
                                     cardClass: function (item) {
-                                        return new JellyfinFolderCard(item, 'media');
+                                        return new JellyfinFolderCard(item, 'boxset');
                                     }
                                 });
                             }
@@ -2818,7 +2864,7 @@
                                     if (!element) return;
                                     if (!element.params) element.params = {};
 
-                                    var card = new JellyfinFolderCard(element, 'media');
+                                    var card = new JellyfinFolderCard(element, t === 'Jellyfin • Франшизы' ? 'boxset' : 'media');
                                     card.create();
 
                                     var html = $(card.item);
@@ -4949,6 +4995,22 @@
         } catch (e0) {}
     }
 
+    function jfDecorateFolderBadge(cardEl) {
+        try {
+            var el = cardEl && cardEl.jquery ? cardEl[0] : cardEl;
+            if (!el) return;
+            var data = jfCardDataFrom(el);
+            if (!data || !data.jellyfin_boxset_id) return;
+            var cnt = parseInt(data.child_count, 10) || 0;
+            if (cnt <= 0) return;
+            var $card = $(el);
+            if ($card.find('.jf-count-badge, .jf-folder-card__badge').length) return;
+            var $view = $card.find('.card__view').first();
+            if (!$view.length) return;
+            $view.append('<div class="jf-count-badge">' + (cnt > 99 ? '99+' : cnt) + '</div>');
+        } catch (e0) {}
+    }
+
     function jfCardDataFrom(cardEl) {
         try {
             var el = cardEl && cardEl.jquery ? cardEl[0] : cardEl;
@@ -5316,6 +5378,7 @@
                     map.Card.onVisible = function () {
                         if (typeof originalOnVisible === 'function') originalOnVisible.apply(this, arguments);
                         if (this.html) jfDecorateCard(this.html);
+                        if (this.html) jfDecorateFolderBadge(this.html);
                     };
                     map.Card.__jellyfinBadgePatched = true;
                 }
@@ -5332,6 +5395,7 @@
                         if (this.card && this.data) {
                             jfBindCardData(this.card, this.data);
                             jfDecorateCard(this.card);
+                            jfDecorateFolderBadge(this.card);
                         }
                     };
                     Lampa.Card.__jellyfinBadgePatched = true;
@@ -5434,7 +5498,8 @@
             '.jf-folder-card--vertical .jf-folder-card__img{width:100%;height:100%;position:absolute;top:0;left:0;object-fit:cover;opacity:0;transition:opacity .2s ease;border-radius:.8em !important}' +
             '.jf-folder-card--vertical.card--loaded .jf-folder-card__img{opacity:1 !important}' +
             '.jf-folder-card--vertical .jf-folder-card__badge{position:absolute;top:.5em;right:.5em;min-width:1.9em;height:1.9em;padding:0 .5em;border-radius:1em;background:#2f9bf0;color:#fff;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.5);z-index:5}' +
-            '.jf-folder-card--vertical .card__title{margin-top:.5em;text-align:center}';
+            '.jf-folder-card--vertical .card__title{margin-top:.5em;text-align:center}' +
+            '.jf-count-badge{position:absolute;top:.5em;right:.5em;min-width:1.9em;height:1.9em;padding:0 .5em;border-radius:1em;background:#2f9bf0;color:#fff;font-size:.9em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.5);z-index:5;pointer-events:none}';
 
         Lampa.Template.add('jellyfin_folders_css', '<style>' + css + '</style>');
         $('body').append(Lampa.Template.get('jellyfin_folders_css', {}, true));
@@ -5697,6 +5762,12 @@
 
         Lampa.SettingsApi.addParam({
             component: 'jellyfin_settings',
+            param: { type: 'trigger', name: 'jellyfin_new_items_noty', 'default': true },
+            field: { name: 'Уведомлять о новинках', description: 'Нотификация о найденных новых фильмах/сериалах на сервере Jellyfin' }
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: 'jellyfin_settings',
             param: { type: 'button', name: 'jellyfin_icon_style_btn' },
             field: { name: 'Иконка', description: 'Выбрать стиль иконки Jellyfin' },
             onChange: function () {
@@ -5743,6 +5814,18 @@
 
         jfInjectHeadIcon();
         [300, 1000, 3000].forEach(function (delay) { setTimeout(jfInjectHeadIcon, delay); });
+        try {
+            Lampa.Listener.follow('activity', function (e) {
+                if (!e || e.type !== 'start') return;
+                jfInjectHeadIcon();
+            });
+        } catch (e0) {}
+        try {
+            Lampa.Listener.follow('app', function (e) {
+                if (!e) return;
+                if (e.type === 'ready' || e.type === 'start') jfInjectHeadIcon();
+            });
+        } catch (e1) {}
 
         jfInitPosterBadge();
         setTimeout(function () { Jellyfin.ensureTmdbIndex(); }, 4000);
