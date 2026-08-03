@@ -54,6 +54,163 @@
     });
   }
 
+  // --- Дублированная логика QR/TV авторизации для быстрого вызова с карточки фильма ---
+  // (настройки в SettingsApi ниже не трогаем, это отдельная копия)
+
+  function generateAuthCodeQuick() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+
+  function buildAuthUrlQuick() {
+    var proxyUrl = (Lampa.Storage.get('rezka_comment_proxy', 'https://rezka.lampasochka.workers.dev/') || 'https://rezka.lampasochka.workers.dev/').trim();
+    if (!startsWithHttp(proxyUrl)) {
+      Lampa.Noty.show('Сначала настройте URL прокси-воркера в настройках плагина');
+      return null;
+    }
+    if (!endsWithSlash(proxyUrl)) proxyUrl += '/';
+
+    var host = (Lampa.Storage.get('rezka_comment_host', 'https://rezka.ag') || 'https://rezka.ag').trim();
+    var hostBare = host.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+
+    var code = generateAuthCodeQuick();
+    var authUrl = proxyUrl + 'auth/' + code + '/' + encodeURIComponent(hostBare);
+
+    return { proxyUrl: proxyUrl, code: code, authUrl: authUrl };
+  }
+
+  function pollAuthCodeQuick(proxyUrl, code, statusSelector, waitingText, onSuccess, onTimeout) {
+    var attempts = 0;
+    window.rezkaQuickAuthInterval = setInterval(function () {
+      attempts++;
+      if (attempts > 90) {
+        clearInterval(window.rezkaQuickAuthInterval);
+        $(statusSelector).text('Время ожидания истекло. Попробуйте снова.').css('color', '#ff5722');
+        if (onTimeout) onTimeout();
+        return;
+      }
+
+      $(statusSelector).text(waitingText + repeatChar('.', attempts % 4));
+
+      $.ajax({
+        url: proxyUrl + 'check?code=' + code,
+        type: 'GET',
+        dataType: 'json',
+        success: function (d) {
+          if (d && (d.status === 'success' || d.cookie)) {
+            clearInterval(window.rezkaQuickAuthInterval);
+            Lampa.Storage.set('rezka_comment_cookie', d.cookie);
+            console.log('[RezkaComment] (quick) cookie saved:', d.cookie);
+
+            var tail = (d.cookie || '').slice(-16);
+            $(statusSelector).html('<span style="color: #4CAF50;">Успешно! Cookie сохранены (…' + tail + ').</span>');
+
+            if (onSuccess) setTimeout(onSuccess, 1500);
+          }
+        },
+        error: function () {}
+      });
+    }, 2000);
+  }
+
+  function closeAuthModalQuick(modalClass) {
+    clearInterval(window.rezkaQuickAuthInterval);
+    Lampa.Modal.close();
+    $(modalClass).remove();
+    try {
+      Lampa.Controller.toggle('content');
+    } catch (e) {}
+  }
+
+  function openQrAuthModalQuick(onDone) {
+    var auth = buildAuthUrlQuick();
+    if (!auth) return;
+
+    var modalHtml = $(
+      '<div style="text-align: center; padding: 20px;">' +
+        '<div style="margin-bottom: 20px; font-size: 1.2em; color: #fff;">' +
+          'Отсканируйте код камерой телефона<br>' +
+          '<span style="font-size: 0.8em; opacity: 0.7;">или перейдите по ссылке:</span><br>' +
+          '<a href="' + auth.authUrl + '" target="_blank" style="font-size: 0.8em; color: #a335ff; word-break: break-all;">' + auth.authUrl + '</a>' +
+        '</div>' +
+        '<div id="rezka_qr_container_quick" style="background: white; padding: 15px; display: inline-block; border-radius: 10px;"></div>' +
+        '<div id="rezka_qr_status_quick" style="margin-top: 20px; font-size: 1.1em; color: #e5e5e5;">Ожидание сканирования...</div>' +
+      '</div>'
+    );
+
+    function finish() {
+      closeAuthModalQuick('.modal--medium');
+      if (onDone) onDone();
+    }
+
+    Lampa.Modal.open({
+      title: 'Авторизация HDRezka',
+      html: modalHtml,
+      size: 'medium',
+      mask: true,
+      onBack: function () { closeAuthModalQuick('.modal--medium'); }
+    });
+
+    var qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(auth.authUrl);
+    $('#rezka_qr_container_quick').html(
+      '<img src="' + qrImgUrl + '" width="250" height="250" alt="QR" onerror="this.parentElement.innerHTML=' +
+      "'<div style=\\'color:#333;font-size:0.9em;padding:20px;\\'>Не удалось загрузить QR. Используйте ссылку выше.</div>'" +
+      '">'
+    );
+
+    pollAuthCodeQuick(auth.proxyUrl, auth.code, '#rezka_qr_status_quick', 'Ожидание решения защиты на телефоне', finish, null);
+  }
+
+  function openTvAuthModalQuick(onDone) {
+    var auth = buildAuthUrlQuick();
+    if (!auth) return;
+
+    var modalHtml = $(
+      '<div style="padding: 10px;">' +
+        '<iframe src="' + auth.authUrl + '" style="width:100%;height:60vh;border:none;background:#fff;border-radius:6px;"></iframe>' +
+        '<div id="rezka_tv_status_quick" style="margin-top: 15px; font-size: 1.1em; color: #e5e5e5; text-align:center;">Ожидание прохождения проверки...</div>' +
+      '</div>'
+    );
+
+    function finish() {
+      closeAuthModalQuick('.modal--large');
+      if (onDone) onDone();
+    }
+
+    Lampa.Modal.open({
+      title: 'Проверка HDRezka',
+      html: modalHtml,
+      size: 'large',
+      mask: true,
+      onBack: function () { closeAuthModalQuick('.modal--large'); }
+    });
+
+    pollAuthCodeQuick(auth.proxyUrl, auth.code, '#rezka_tv_status_quick', 'Ожидание решения защиты', finish, null);
+  }
+
+  // Показывает выбор способа авторизации, когда куки протухли/отсутствуют.
+  // retryFn (опционально) — вызывается после успешной авторизации, чтобы
+  // сразу повторить действие (поиск/загрузку комментариев) без лишних нажатий.
+  function showCookieExpiredChoice(retryFn) {
+    Lampa.Select.show({
+      title: 'Cookie Rezka устарели или отсутствуют',
+      items: [
+        { title: 'Пройти проверку в Lampa', method: 'tv' },
+        { title: 'Через QR-код на телефоне', method: 'qr' }
+      ],
+      onBack: function () {
+        Lampa.Controller.toggle('content');
+      },
+      onSelect: function (item) {
+        if (item.method === 'tv') {
+          openTvAuthModalQuick(retryFn);
+        } else {
+          openQrAuthModalQuick(retryFn);
+        }
+      }
+    });
+  }
+  // --- конец дублированной логики ---
+
   function getSettings() {
     var host = (Lampa.Storage.get('rezka_comment_host', 'https://rezka.ag') || 'https://rezka.ag').trim().replace(/\/+$/, '');
     var cookie = (Lampa.Storage.get('rezka_comment_cookie', '') || '').trim();
@@ -92,12 +249,15 @@
       var item = dom.querySelector(".b-content__inline_item");
       if (!item) {
         console.warn('[RezkaComment] show not found on Rezka:', name, ye);
+        Lampa.Loading.stop();
         if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
-          Lampa.Noty.show('Защита от ботов на Rezka. Настройте Cookie в настройках плагина.');
+          showCookieExpiredChoice(function () {
+            Lampa.Loading.start();
+            searchRezka(name, ye);
+          });
         } else {
           Lampa.Noty.show('Фильм/сериал не найден на Rezka');
         }
-        Lampa.Loading.stop();
         return;
       }
 
@@ -340,8 +500,11 @@
       return r.text();
     }).then(function (fc) {
       if (fc.indexOf("Проверяем, что вы не бот") !== -1 || fc.indexOf("Anubis") !== -1) {
-        Lampa.Noty.show('Защита от ботов на Rezka. Настройте Cookie в настройках плагина.');
         Lampa.Loading.stop();
+        showCookieExpiredChoice(function () {
+          Lampa.Loading.start();
+          comment_rezka(id, pageUrl);
+        });
         return;
       }
 
